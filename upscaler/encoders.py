@@ -2,6 +2,7 @@ from typing import Dict, List, Optional
 from . import ToolError
 
 PRESET_BITRATES: Dict[str, str] = {
+    "480p": "3M",
     "720p": "6M",
     "1080p": "12M",
     "4k": "40M",

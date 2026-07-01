@@ -43,7 +43,7 @@ def main(argv: List[str] = None) -> int:
     # Upscaling preset & model
     parser.add_argument(
         "--preset",
-        choices=["720p", "1080p", "4k"],
+        choices=["480p", "720p", "1080p", "4k"],
         default="1080p",
         help="Target output preset. Defaults to '1080p'."
     )

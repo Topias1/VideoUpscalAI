@@ -12,6 +12,7 @@ from upscaler.plan import (
 )
 
 def test_get_target_height():
+    assert get_target_height("480p") == 480
     assert get_target_height("720p") == 720
     assert get_target_height("1080p") == 1080
     assert get_target_height("4k") == 2160

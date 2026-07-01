@@ -389,9 +389,9 @@ def run_single_file(
         for seg_path in segments:
             seg_stem = Path(seg_path).stem
             out_seg_file = os.path.join(seg_out_dir, f"{seg_stem}.mp4")
-            # Concat needs escaped/relative or absolute file entries
-            # We use absolute paths to be safe
-            f.write(f"file '{os.path.abspath(out_seg_file)}'\n")
+            abs_path = os.path.abspath(out_seg_file)
+            escaped_path = abs_path.replace("\\", "\\\\").replace("'", "\\'")
+            f.write(f"file '{escaped_path}'\n")
 
     video_only_path = os.path.join(work_dir, "video_only.mp4")
     print("Concatenating segments...")
