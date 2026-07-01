@@ -71,9 +71,12 @@ def build_realesrgan_cmd(
         "-f", "png"
     ]
     
-    # Auto-resolve model directory next to binary if present
+    # Auto-resolve model directory next to binary or in parent directory
     bin_dir = os.path.dirname(os.path.abspath(realesrgan_bin))
     models_dir = os.path.join(bin_dir, "models")
+    if not os.path.isdir(models_dir):
+        models_dir = os.path.abspath(os.path.join(bin_dir, "..", "models"))
+        
     if os.path.isdir(models_dir):
         cmd.extend(["-m", models_dir])
 
