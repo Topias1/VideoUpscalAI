@@ -70,6 +70,13 @@ def build_realesrgan_cmd(
         "-s", "4",
         "-f", "png"
     ]
+    
+    # Auto-resolve model directory next to binary if present
+    bin_dir = os.path.dirname(os.path.abspath(realesrgan_bin))
+    models_dir = os.path.join(bin_dir, "models")
+    if os.path.isdir(models_dir):
+        cmd.extend(["-m", models_dir])
+
     if jobs != "auto":
         cmd.extend(["-j", jobs])
     return cmd
