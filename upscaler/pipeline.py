@@ -94,8 +94,16 @@ def run_realesrgan_stream(cmd: List[str], file_path: str, chunk: str) -> None:
                 line = "".join(buffer).strip()
                 buffer.clear()
                 if line and "%" in line:
-                    # Print progress inline without newline
-                    print(f"\r  [realesrgan] {chunk} progress: {line}", end="", flush=True)
+                    try:
+                        val_str = line.split("%")[0].strip().split()[-1]
+                        pct = float(val_str)
+                        pct = max(0.0, min(100.0, pct))
+                        bar_len = 25
+                        filled_len = int(round(bar_len * pct / 100))
+                        bar = "█" * filled_len + "░" * (bar_len - filled_len)
+                        print(f"\r  [realesrgan] {chunk}: [{bar}] {pct:.2f}%", end="", flush=True)
+                    except Exception:
+                        print(f"\r  [realesrgan] {chunk} progress: {line}", end="", flush=True)
             else:
                 buffer.append(char)
                 
