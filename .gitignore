@@ -1,0 +1,9 @@
+.venv/
+.pytest_cache/
+__pycache__/
+*.pyc
+.work*/
+*.work/
+.DS_Store
+*.mp4
+!tests/*.mp4
