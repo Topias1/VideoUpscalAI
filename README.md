@@ -27,6 +27,12 @@ For macOS users, a pre-compiled, **100% self-contained** standalone bundle is av
   open dist/VideoUpscalAI.app
   ```
 
+> [!NOTE]
+> **macOS Gatekeeper Note**: Since the application is not signed/notarized with an Apple Developer account, macOS Gatekeeper may show a warning ("Apple could not confirm...") on first launch. To open it:
+> 1. **Right-click (or Control-click)** the application icon in Finder and select **Open**.
+> 2. Click **Open** (or **Ouvrir**) in the dialog.
+> 3. *Or:* Go to your Mac's **System Settings > Privacy & Security**, scroll down, and click **Open Anyway** (or **Ouvrir quand même**).
+
 ### Developer Setup (Source Code Run)
 If you are running or modifying the raw Python source code directly:
 1. Ensure your local copies of the helper binaries (`ffmpeg`, `ffprobe`, and `upscaler/bin/upscayl-bin`) and AI models (`upscaler/models/*.param`/`.bin`) are present in the project structure.
