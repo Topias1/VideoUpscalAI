@@ -297,6 +297,7 @@ def run_single_file(
     
     manifest_lock = threading.Lock()
     print_lock = threading.Lock()
+    gpu_lock = threading.Lock()
     workers = opts.get("workers", 1)
     
     def process_segment(i: int) -> None:
@@ -366,15 +367,16 @@ def run_single_file(
                 )
 
             # Stage 2: Upscale 4x
-            real_cmd = build_realesrgan_cmd(
-                tools_info["realesrgan_path"],
-                frames_dir,
-                up_dir,
-                opts["model"],
-                opts["jobs"],
-                model_path=opts.get("model_path")
-            )
-            run_realesrgan_stream(real_cmd, input_abs, seg_name, show_progress=(workers == 1))
+            with gpu_lock:
+                real_cmd = build_realesrgan_cmd(
+                    tools_info["realesrgan_path"],
+                    frames_dir,
+                    up_dir,
+                    opts["model"],
+                    opts["jobs"],
+                    model_path=opts.get("model_path")
+                )
+                run_realesrgan_stream(real_cmd, input_abs, seg_name, show_progress=(workers == 1))
 
             # Verify upscale PNGs match input count
             up_png_files = [f for f in os.listdir(up_dir) if f.endswith(".png")]

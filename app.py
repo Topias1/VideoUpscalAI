@@ -67,8 +67,8 @@ def main():
     webview.start()
 
 if __name__ == "__main__":
-    import sys
-    if len(sys.argv) > 1:
+    import os
+    if os.environ.get("VIDEO_UPSCALER_CLI") == "1":
         # Run as the CLI upscaler helper
         import upscale
         upscale.main()

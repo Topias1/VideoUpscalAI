@@ -44,6 +44,7 @@ def run_upscale_thread(cmd_args):
         import os
         env = os.environ.copy()
         env["PYTHONUNBUFFERED"] = "1"
+        env["VIDEO_UPSCALER_CLI"] = "1"
         
         active_process = subprocess.Popen(
             cmd,
@@ -256,15 +257,24 @@ HTML_CONTENT = """<!DOCTYPE html>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Apple Silicon Video Upscaler</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #0b0f19;
-            --card-bg: rgba(22, 28, 45, 0.6);
-            --accent: linear-gradient(135deg, #6366f1, #06b6d4);
-            --text-color: #f3f4f6;
-            --text-muted: #9ca3af;
-            --border-color: rgba(255, 255, 255, 0.08);
+            /* Perceptually uniform OKLCH colors (restrained system-cohesive blue/indigo palette) */
+            --bg-color: oklch(0.12 0.008 250);
+            --card-bg: oklch(0.15 0.005 250);
+            --accent-color: oklch(0.6 0.18 250);
+            --accent-hover: oklch(0.55 0.18 250);
+            --accent-active: oklch(0.5 0.18 250);
+            --text-color: oklch(0.95 0.005 250);
+            --text-muted: oklch(0.65 0.01 250);
+            --border-color: oklch(0.22 0.01 250);
+            
+            --success-color: oklch(0.68 0.16 140);
+            --success-bg: oklch(0.68 0.16 140 / 0.12);
+            --error-color: oklch(0.6 0.18 20);
+            --error-bg: oklch(0.6 0.18 20 / 0.12);
+            --warning-color: oklch(0.75 0.15 65);
+            --warning-bg: oklch(0.75 0.15 65 / 0.12);
         }
 
         * {
@@ -274,191 +284,224 @@ HTML_CONTENT = """<!DOCTYPE html>
         }
 
         body {
-            font-family: 'Outfit', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
             min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-image: radial-gradient(circle at top right, rgba(99, 102, 241, 0.15), transparent 400px),
-                              radial-gradient(circle at bottom left, rgba(6, 182, 212, 0.15), transparent 400px);
-            padding: 20px;
+            margin: 0;
+            padding: 0;
+            background-image: radial-gradient(circle at top right, oklch(0.6 0.18 250 / 0.08), transparent 400px),
+                              radial-gradient(circle at bottom left, oklch(0.68 0.16 140 / 0.05), transparent 400px);
         }
 
         .container {
             width: 100%;
-            max-width: 1050px;
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 24px;
-            backdrop-filter: blur(16px);
-            padding: 20px 30px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-        }
-
-        .main-layout {
-            display: grid;
-            grid-template-columns: 1fr 1.1fr;
-            gap: 24px;
-            align-items: start;
-        }
-
-        .status-side {
+            min-height: 100vh;
+            box-sizing: border-box;
+            padding: 24px;
             display: flex;
             flex-direction: column;
         }
 
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 16px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-logo {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            background-color: var(--card-bg);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
         h1 {
-            font-size: 1.8rem;
-            font-weight: 800;
-            background: var(--accent);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin: 0;
-            text-align: center;
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: var(--text-color);
+            letter-spacing: -0.02em;
         }
 
         .subtitle {
-            font-size: 0.95rem;
+            font-size: 0.85rem;
             color: var(--text-muted);
-            text-align: center;
-            margin-bottom: 16px;
+            margin-top: 2px;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            gap: 24px;
+            align-items: stretch;
+            flex-grow: 1;
+        }
+
+        .form-side {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
         }
 
         .form-group {
-            margin-bottom: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
         }
 
         label {
-            display: block;
-            font-size: 0.95rem;
+            font-size: 0.85rem;
             font-weight: 600;
-            margin-bottom: 8px;
-            color: var(--text-color);
+            color: oklch(0.75 0.01 250);
         }
 
         .input-with-btn {
             display: flex;
-            gap: 12px;
+            gap: 8px;
         }
 
         input[type="text"], select, input[type="number"] {
             width: 100%;
-            padding: 10px 12px;
-            background: rgba(17, 24, 39, 0.8);
+            padding: 8px 12px;
+            background: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: 12px;
+            border-radius: 8px;
             color: var(--text-color);
             font-family: inherit;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
         }
 
         input[type="text"]:focus, select:focus, input[type="number"]:focus {
-            border-color: #6366f1;
+            border-color: var(--accent-color);
             outline: none;
-            box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
+            box-shadow: 0 0 0 2px oklch(0.6 0.18 250 / 0.15);
         }
 
         .btn-browse {
-            padding: 10px 14px;
-            background: rgba(255, 255, 255, 0.05);
+            padding: 8px 12px;
+            background: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: 12px;
+            border-radius: 8px;
             color: var(--text-color);
             cursor: pointer;
             font-weight: 600;
+            font-size: 0.85rem;
             display: flex;
             align-items: center;
-            gap: 8px;
-            transition: all 0.2s ease;
+            gap: 6px;
+            transition: background-color 0.15s ease, border-color 0.15s ease;
         }
 
         .btn-browse:hover {
-            background: rgba(99, 102, 241, 0.15);
-            border-color: #6366f1;
+            background: oklch(0.2 0.008 250);
+            border-color: oklch(0.3 0.01 250);
         }
 
         .grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: 16px;
         }
 
         .checkbox-group {
             display: flex;
             align-items: center;
-            gap: 12px;
-            margin-top: 10px;
+            gap: 10px;
+            margin-top: 4px;
         }
 
         input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            accent-color: #6366f1;
+            width: 18px;
+            height: 18px;
+            accent-color: var(--accent-color);
             cursor: pointer;
         }
 
         .btn-container {
             display: flex;
-            gap: 16px;
-            margin-top: 20px;
+            gap: 12px;
+            margin-top: 16px;
         }
 
         button {
             flex: 1;
-            padding: 16px;
+            padding: 12px;
             font-family: inherit;
-            font-size: 1.05rem;
+            font-size: 0.95rem;
             font-weight: 600;
             border: none;
-            border-radius: 14px;
+            border-radius: 8px;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: background-color 0.15s ease, opacity 0.15s ease;
         }
 
         .btn-primary {
-            background: var(--accent);
+            background: var(--accent-color);
             color: white;
-            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
         }
 
         .btn-primary:hover {
-            opacity: 0.95;
-            transform: translateY(-2px);
+            background: var(--accent-hover);
+        }
+
+        .btn-primary:active {
+            background: var(--accent-active);
         }
 
         .btn-cancel {
-            background: rgba(239, 68, 68, 0.2);
-            color: #ef4444;
-            border: 1px solid rgba(239, 68, 68, 0.4);
+            background: var(--error-bg);
+            color: var(--error-color);
+            border: 1px solid oklch(0.6 0.18 20 / 0.3);
         }
 
         .btn-cancel:hover {
-            background: rgba(239, 68, 68, 0.3);
+            background: oklch(0.6 0.18 20 / 0.2);
+        }
+
+        .status-side {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
         }
 
         /* Progress Card */
         .progress-card {
-            padding: 16px;
-            background: rgba(17, 24, 39, 0.6);
+            padding: 20px;
+            background: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: 16px;
+            border-radius: 12px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
         }
 
         .progress-title {
             display: flex;
             justify-content: space-between;
             font-weight: 600;
+            font-size: 0.9rem;
             margin-bottom: 12px;
         }
 
         .progress-bar-container {
             width: 100%;
-            height: 12px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 6px;
+            height: 8px;
+            background: oklch(0.2 0.005 250);
+            border-radius: 4px;
             overflow: hidden;
             margin-bottom: 16px;
         }
@@ -466,37 +509,50 @@ HTML_CONTENT = """<!DOCTYPE html>
         .progress-bar-fill {
             width: 0%;
             height: 100%;
-            background: var(--accent);
-            transition: width 0.4s ease;
+            background: var(--accent-color);
+            transition: width 0.3s ease;
+        }
+
+        .status-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
         }
 
         .log-terminal {
             width: 100%;
-            height: 250px;
-            background: #05070c;
+            flex-grow: 1;
+            min-height: 250px;
+            height: 0;
+            background: oklch(0.08 0.005 250);
             border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 12px;
-            font-family: monospace;
-            font-size: 0.85rem;
-            color: #34d399;
+            border-radius: 8px;
+            padding: 14px;
+            font-family: SF Mono, Monaco, Consolas, "Liberation Mono", monospace;
+            font-size: 0.82rem;
+            color: oklch(0.85 0.02 140);
             overflow-y: scroll;
             white-space: pre-wrap;
-            margin-top: 12px;
+            margin-top: 14px;
+            line-height: 1.4;
         }
 
         .status-badge {
             display: inline-block;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
         }
 
-        .status-idle { background: rgba(156, 163, 175, 0.2); color: #9ca3af; }
-        .status-running { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
-        .status-completed { background: rgba(16, 185, 129, 0.2); color: #34d399; }
-        .status-failed { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+        .status-idle { background: oklch(0.2 0.005 250); color: var(--text-muted); }
+        .status-running { background: oklch(0.6 0.18 250 / 0.15); color: var(--accent-color); }
+        .status-completed { background: var(--success-bg); color: var(--success-color); }
+        .status-failed { background: var(--error-bg); color: var(--error-color); }
 
         /* File Explorer Modal */
         .modal {
@@ -507,37 +563,42 @@ HTML_CONTENT = """<!DOCTYPE html>
             top: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(8px);
+            background-color: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(4px);
             align-items: center;
             justify-content: center;
         }
 
         .modal-content {
-            background: rgba(17, 24, 39, 0.95);
+            background: oklch(0.14 0.005 250);
             border: 1px solid var(--border-color);
-            border-radius: 20px;
+            border-radius: 16px;
             width: 90%;
             max-width: 600px;
             max-height: 80%;
             display: flex;
             flex-direction: column;
-            padding: 24px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
         }
 
         .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
+        }
+
+        .modal-header h2 {
+            font-size: 1.1rem;
+            font-weight: 700;
         }
 
         .close-btn {
             background: none;
             border: none;
             color: var(--text-muted);
-            font-size: 2rem;
+            font-size: 1.5rem;
             cursor: pointer;
             line-height: 1;
         }
@@ -547,12 +608,12 @@ HTML_CONTENT = """<!DOCTYPE html>
         }
 
         .breadcrumbs {
-            font-size: 0.9rem;
-            color: #6366f1;
-            background: rgba(255, 255, 255, 0.03);
-            padding: 8px 12px;
-            border-radius: 8px;
-            margin-bottom: 16px;
+            font-size: 0.85rem;
+            color: var(--accent-color);
+            background: oklch(0.08 0.005 250);
+            padding: 6px 10px;
+            border-radius: 6px;
+            margin-bottom: 12px;
             word-break: break-all;
             cursor: pointer;
         }
@@ -560,52 +621,55 @@ HTML_CONTENT = """<!DOCTYPE html>
         .file-list {
             flex: 1;
             overflow-y: auto;
-            min-height: 300px;
-            max-height: 400px;
+            min-height: 250px;
+            max-height: 350px;
             border: 1px solid var(--border-color);
-            border-radius: 10px;
-            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            background: oklch(0.08 0.005 250);
         }
 
         .file-item {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 10px 14px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            gap: 10px;
+            padding: 8px 12px;
+            border-bottom: 1px solid oklch(0.2 0.005 250 / 0.5);
             cursor: pointer;
-            transition: background 0.2s ease;
+            transition: background-color 0.15s ease;
+            font-size: 0.85rem;
         }
 
         .file-item:hover {
-            background: rgba(99, 102, 241, 0.1);
+            background: oklch(0.6 0.18 250 / 0.08);
         }
 
         .file-icon {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
         }
 
         .file-name {
-            font-size: 0.95rem;
             color: var(--text-color);
             word-break: break-all;
         }
 
         .modal-footer {
-            margin-top: 16px;
+            margin-top: 12px;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            justify-content: flex-end;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div style="text-align: center; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 16px;">
-            <img src="/logo.jpg" alt="Logo" style="width: 50px; height: 50px; border-radius: 12px; box-shadow: 0 5px 15px rgba(99, 102, 241, 0.4); border: 2px solid rgba(255, 255, 255, 0.1); display: inline-block;">
-            <h1>Apple Silicon Video Upscaler</h1>
-        </div>
-        <div class="subtitle" style="margin-bottom: 20px;">Interface graphique locale de traitement IA</div>
+        <header>
+            <div class="header-brand">
+                <img src="/logo.jpg" alt="Logo" class="header-logo">
+                <div>
+                    <h1>Apple Silicon Video Upscaler</h1>
+                    <div class="subtitle">Interface de traitement local haute performance</div>
+                </div>
+            </div>
+        </header>
 
         <div class="main-layout">
             <div class="form-side">
@@ -619,61 +683,61 @@ HTML_CONTENT = """<!DOCTYPE html>
                         </div>
                     </div>
 
-            <div class="form-group">
-                <label for="output_file">Dossier de sortie (Optionnel)</label>
-                <div class="input-with-btn">
-                    <input type="text" id="output_file" placeholder="Ex: /Users/nom_utilisateur/Downloads/">
-                    <button type="button" class="btn-browse" onclick="openExplorer('output_file', true)">📁 Dossier</button>
-                </div>
-            </div>
-
-            <div class="grid">
-                <div class="form-group">
-                    <label for="preset">Preset de Résolution</label>
-                    <select id="preset">
-                        <option value="480p">480p (Target: 480px height)</option>
-                        <option value="720p">720p (Target: 720px height)</option>
-                        <option value="1080p" selected>1080p (Target: 1080px height)</option>
-                        <option value="4k">4K (Target: 2160px height)</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="model">Modèle d'Upscaling IA</label>
-                    <select id="model">
-                        <option value="auto" selected>Détection Automatique (Recommandé)</option>
-                        <option value="realesrgan-x4plus">Real-ESRGAN x4plus (Films Réels)</option>
-                        <option value="realesr-animevideov3">Real-ESR Anime Video v3 (Animation 2D/3D)</option>
-                        <option value="digital-art-4x">Digital Art 4x (CGI / Upscayl)</option>
-                        <option value="ultrasharp-4x">UltraSharp 4x (Photos/Textures)</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="grid">
-                <div class="form-group">
-                    <label for="workers">Nombre de Chunks en Parallèle</label>
-                    <input type="number" id="workers" min="1" max="8" value="2">
-                </div>
-
-                <div class="form-group">
-                    <label style="margin-bottom: 15px;">Filtres & Améliorations</label>
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="denoise">
-                        <label for="denoise" style="margin-bottom: 0; font-weight: normal;">Réduire le scintillement (Denoise temporel)</label>
+                    <div class="form-group">
+                        <label for="output_file">Dossier de sortie (Optionnel)</label>
+                        <div class="input-with-btn">
+                            <input type="text" id="output_file" placeholder="Ex: /Users/nom_utilisateur/Downloads/">
+                            <button type="button" class="btn-browse" onclick="openExplorer('output_file', true)">📁 Dossier</button>
+                        </div>
                     </div>
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="interpolate">
-                        <label for="interpolate" style="margin-bottom: 0; font-weight: normal;">Fluidifier à 60 FPS (Interpolation)</label>
+
+                    <div class="grid">
+                        <div class="form-group">
+                            <label for="preset">Preset de Résolution</label>
+                            <select id="preset">
+                                <option value="480p">480p (Target: 480px height)</option>
+                                <option value="720p">720p (Target: 720px height)</option>
+                                <option value="1080p" selected>1080p (Target: 1080px height)</option>
+                                <option value="4k">4K (Target: 2160px height)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="model">Modèle d'Upscaling IA</label>
+                            <select id="model">
+                                <option value="auto" selected>Détection Automatique (Recommandé)</option>
+                                <option value="realesrgan-x4plus">Real-ESRGAN x4plus (Films Réels)</option>
+                                <option value="realesr-animevideov3">Real-ESR Anime Video v3 (Animation 2D/3D)</option>
+                                <option value="digital-art-4x">Digital Art 4x (CGI / Upscayl)</option>
+                                <option value="ultrasharp-4x">UltraSharp 4x (Photos/Textures)</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="recursive">
-                        <label for="recursive" style="margin-bottom: 0; font-weight: normal;">Traiter les sous-dossiers récursivement</label>
+
+                    <div class="grid">
+                        <div class="form-group">
+                            <label for="workers">Nombre de Chunks en Parallèle</label>
+                            <input type="number" id="workers" min="1" max="8" value="2">
+                        </div>
+
+                        <div class="form-group">
+                            <label style="margin-bottom: 6px;">Filtres & Améliorations</label>
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="denoise">
+                                <label for="denoise" style="font-weight: normal; color: var(--text-color); cursor: pointer;">Réduire le scintillement (Denoise temporel)</label>
+                            </div>
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="interpolate">
+                                <label for="interpolate" style="font-weight: normal; color: var(--text-color); cursor: pointer;">Fluidifier à 60 FPS (Interpolation)</label>
+                            </div>
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="recursive">
+                                <label for="recursive" style="font-weight: normal; color: var(--text-color); cursor: pointer;">Traiter les sous-dossiers récursivement</label>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                </form>
             </div>
-        </form>
-    </div>
             
             <div class="status-side">
                 <div class="progress-card" id="progressCard">
@@ -684,9 +748,9 @@ HTML_CONTENT = """<!DOCTYPE html>
                     <div class="progress-bar-container">
                         <div class="progress-bar-fill" id="progressBar"></div>
                     </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div class="status-meta">
                         <span>Statut : <span class="status-badge status-idle" id="statusBadge">IDLE</span></span>
-                        <span id="outputSuccess" style="color: #34d399; font-weight: 600;"></span>
+                        <span id="outputSuccess" style="color: var(--success-color); font-weight: 600;"></span>
                     </div>
                     <div class="log-terminal" id="logTerminal">En attente de lancement d'upscaling...</div>
                 </div>
@@ -709,8 +773,7 @@ HTML_CONTENT = """<!DOCTYPE html>
             <div class="breadcrumbs" id="breadcrumbs"></div>
             <div class="file-list" id="fileList"></div>
             <div class="modal-footer">
-                <button type="button" class="btn-primary" id="selectCurrentFolderBtn" style="flex:none; width:auto; padding: 10px 16px;">Sélectionner ce dossier actuel</button>
-                <button type="button" class="btn-cancel" onclick="closeExplorer()" style="flex:none; width:auto; padding: 10px 16px;">Fermer</button>
+                <button type="button" class="btn-primary" id="selectCurrentFolderBtn" style="flex:none; width:auto; padding: 8px 14px; font-size: 0.85rem;">Sélectionner ce dossier</button>
             </div>
         </div>
     </div>
@@ -718,6 +781,21 @@ HTML_CONTENT = """<!DOCTYPE html>
     <script>
         let pollInterval = null;
         let activeInputId = "";
+
+        window.addEventListener("DOMContentLoaded", () => {
+            fetch("/status")
+            .then(res => res.json())
+            .then(state => {
+                if (state.status === "running") {
+                    document.getElementById("submitBtn").style.display = "none";
+                    document.getElementById("cancelBtn").style.display = "block";
+                    pollStatus();
+                    pollInterval = setInterval(pollStatus, 500);
+                } else if (state.status === "completed" || state.status === "failed") {
+                    pollStatus();
+                }
+            });
+        });
 
         function openExplorer(inputId, isFolder = false) {
             if (window.pywebview && window.pywebview.api) {
@@ -812,7 +890,6 @@ HTML_CONTENT = """<!DOCTYPE html>
             .then(res => res.json())
             .then(data => {
                 if (data.started) {
-                    document.getElementById("progressCard").style.display = "block";
                     document.getElementById("submitBtn").style.display = "none";
                     document.getElementById("cancelBtn").style.display = "block";
                     document.getElementById("outputSuccess").innerText = "";
@@ -829,7 +906,7 @@ HTML_CONTENT = """<!DOCTYPE html>
             .then(state => {
                 document.getElementById("progressText").innerText = Math.round(state.progress) + "%";
                 document.getElementById("progressBar").style.width = state.progress + "%";
-                document.getElementById("progressSegment").innerText = state.current_segment;
+                document.getElementById("progressSegment").innerText = state.current_segment || "Traitement...";
                 
                 const badge = document.getElementById("statusBadge");
                 badge.innerText = state.status.toUpperCase();
