@@ -136,6 +136,23 @@ class GUIHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps({"cancelled": True}).encode("utf-8"))
             
+        elif parsed_url.path == "/logo.jpg":
+            import sys
+            if getattr(sys, 'frozen', False):
+                logo_path = os.path.join(sys._MEIPASS, "logo.jpg")
+            else:
+                logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logo.jpg")
+                
+            if os.path.exists(logo_path):
+                self.send_response(200)
+                self.send_header("Content-Type", "image/jpeg")
+                self.end_headers()
+                with open(logo_path, "rb") as f:
+                    self.wfile.write(f.read())
+            else:
+                self.send_response(404)
+                self.end_headers()
+            
         elif parsed_url.path == "/explore":
             query = urllib.parse.parse_qs(parsed_url.query)
             path_param = query.get("path", [None])[0]
@@ -568,6 +585,9 @@ HTML_CONTENT = """<!DOCTYPE html>
 </head>
 <body>
     <div class="container">
+        <div style="text-align: center; margin-bottom: 24px;">
+            <img src="/logo.jpg" alt="Logo" style="width: 120px; height: 120px; border-radius: 28px; box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4); border: 2px solid rgba(255, 255, 255, 0.1); display: inline-block;">
+        </div>
         <h1>Apple Silicon Video Upscaler</h1>
         <div class="subtitle">Interface graphique locale de traitement IA</div>
 

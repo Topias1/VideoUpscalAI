@@ -8,3 +8,6 @@ __pycache__/
 *.mp4
 !tests/*.mp4
 realesrgan/
+build/
+dist/
+*.spec
