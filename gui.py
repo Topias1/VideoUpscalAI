@@ -81,8 +81,38 @@ def run_upscale_thread(cmd_args):
                             except ValueError:
                                 pass
                         
-                        if "Segment" in line:
-                            task_state["current_segment"] = line
+                        # Parse file progress line, e.g.: "File 1/3: video.mp4"
+                        if "File " in line and "/" in line and ":" in line:
+                            try:
+                                parts = line.split(":", 1)
+                                file_part = parts[0].replace("File", "").strip() # "1/3"
+                                filename_part = parts[1].strip() # "video.mp4"
+                                task_state["current_file_info"] = {
+                                    "progress": file_part,
+                                    "name": filename_part
+                                }
+                                task_state["current_segment"] = f"Processing: {filename_part} ({file_part})"
+                            except Exception:
+                                pass
+                                
+                        # Parse segment progress line, e.g.: "Segment 1/2: seg_0000.mkv starting..."
+                        elif "Segment " in line and "/" in line and ":" in line:
+                            try:
+                                parts = line.split(":", 1)
+                                seg_part = parts[0].replace("Segment", "").strip() # "1/2"
+                                # Check if total segments is 1, in which case we don't need to append "Part 1/1"
+                                if seg_part == "1/1":
+                                    if "current_file_info" in task_state:
+                                        info = task_state["current_file_info"]
+                                        task_state["current_segment"] = f"Processing: {info['name']} ({info['progress']})"
+                                else:
+                                    if "current_file_info" in task_state:
+                                        info = task_state["current_file_info"]
+                                        task_state["current_segment"] = f"Processing: {info['name']} ({info['progress']}) - Part {seg_part}"
+                                    else:
+                                        task_state["current_segment"] = f"Processing - Part {seg_part}"
+                            except Exception:
+                                pass
                         elif "Successfully upscaled" in line:
                             parts = line.split("->")
                             if len(parts) > 1:
@@ -261,7 +291,7 @@ class GUIHandler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({"started": True}).encode("utf-8"))
 
 HTML_CONTENT = """<!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -287,36 +317,65 @@ HTML_CONTENT = """<!DOCTYPE html>
             font-family: 'Outfit', sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
-            min-height: 100vh;
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
             display: flex;
-            justify-content: center;
-            align-items: center;
+            justify-content: stretch;
+            align-items: stretch;
             background-image: radial-gradient(circle at top right, rgba(99, 102, 241, 0.15), transparent 400px),
                               radial-gradient(circle at bottom left, rgba(6, 182, 212, 0.15), transparent 400px);
-            padding: 20px;
+            overflow: hidden;
         }
 
         .container {
             width: 100%;
-            max-width: 1050px;
+            height: 100%;
+            max-width: none;
             background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 24px;
+            border: none;
+            border-radius: 0;
             backdrop-filter: blur(16px);
-            padding: 20px 30px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            padding: 20px 24px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: none;
         }
 
         .main-layout {
             display: grid;
-            grid-template-columns: 1fr 1.1fr;
+            grid-template-columns: 1fr 1.2fr;
             gap: 24px;
-            align-items: start;
+            align-items: stretch;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .form-side {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow-y: auto;
+            padding-right: 8px;
+            min-height: 0;
+        }
+
+        .form-side::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .form-side::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
         }
 
         .status-side {
             display: flex;
             flex-direction: column;
+            height: 100%;
+            min-height: 0;
+            overflow: hidden;
         }
 
         h1 {
@@ -455,6 +514,11 @@ HTML_CONTENT = """<!DOCTYPE html>
             background: rgba(17, 24, 39, 0.6);
             border: 1px solid var(--border-color);
             border-radius: 16px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            overflow: hidden;
         }
 
         .progress-title {
@@ -482,7 +546,7 @@ HTML_CONTENT = """<!DOCTYPE html>
 
         .log-terminal {
             width: 100%;
-            height: 250px;
+            flex: 1;
             background: #05070c;
             border: 1px solid var(--border-color);
             border-radius: 10px;
@@ -490,9 +554,10 @@ HTML_CONTENT = """<!DOCTYPE html>
             font-family: monospace;
             font-size: 0.85rem;
             color: #34d399;
-            overflow-y: scroll;
+            overflow-y: auto;
             white-space: pre-wrap;
             margin-top: 12px;
+            min-height: 0;
         }
 
         .status-badge {
@@ -615,31 +680,31 @@ HTML_CONTENT = """<!DOCTYPE html>
             <img src="/logo.jpg" alt="Logo" style="width: 50px; height: 50px; border-radius: 12px; box-shadow: 0 5px 15px rgba(99, 102, 241, 0.4); border: 2px solid rgba(255, 255, 255, 0.1); display: inline-block;">
             <h1>Apple Silicon Video Upscaler</h1>
         </div>
-        <div class="subtitle" style="margin-bottom: 20px;">Interface graphique locale de traitement IA</div>
+        <div class="subtitle" style="margin-bottom: 20px;">Local GUI for AI Processing</div>
 
         <div class="main-layout">
             <div class="form-side">
                 <form id="upscaleForm" onsubmit="startUpscale(event)">
                     <div class="form-group">
-                        <label for="input_file">Vidéo ou Dossier source</label>
+                        <label for="input_file">Source Video or Folder</label>
                         <div class="input-with-btn">
-                            <input type="text" id="input_file" required placeholder="Sélectionnez un fichier ou un dossier...">
-                            <button type="button" class="btn-browse" onclick="openExplorer('input_file', false)">🎥 Fichier</button>
-                            <button type="button" class="btn-browse" onclick="openExplorer('input_file', true)">📁 Dossier</button>
+                            <input type="text" id="input_file" required placeholder="Select a file or folder...">
+                            <button type="button" class="btn-browse" onclick="openExplorer('input_file', false)">🎥 File</button>
+                            <button type="button" class="btn-browse" onclick="openExplorer('input_file', true)">📁 Folder</button>
                         </div>
                     </div>
 
             <div class="form-group">
-                <label for="output_file">Dossier de sortie (Optionnel)</label>
+                <label for="output_file">Output Folder (Optional)</label>
                 <div class="input-with-btn">
-                    <input type="text" id="output_file" placeholder="Ex: /Users/nom_utilisateur/Downloads/">
-                    <button type="button" class="btn-browse" onclick="openExplorer('output_file', true)">📁 Dossier</button>
+                    <input type="text" id="output_file" placeholder="e.g. /Users/username/Downloads/">
+                    <button type="button" class="btn-browse" onclick="openExplorer('output_file', true)">📁 Folder</button>
                 </div>
             </div>
 
             <div class="grid">
                 <div class="form-group">
-                    <label for="preset">Preset de Résolution</label>
+                    <label for="preset">Resolution Preset</label>
                     <select id="preset">
                         <option value="480p">480p (Target: 480px height)</option>
                         <option value="720p">720p (Target: 720px height)</option>
@@ -649,11 +714,11 @@ HTML_CONTENT = """<!DOCTYPE html>
                 </div>
 
                 <div class="form-group">
-                    <label for="model">Modèle d'Upscaling IA</label>
+                    <label for="model">AI Upscaling Model</label>
                     <select id="model">
-                        <option value="auto" selected>Détection Automatique (Recommandé)</option>
-                        <option value="realesrgan-x4plus">Real-ESRGAN x4plus (Films Réels)</option>
-                        <option value="realesr-animevideov3">Real-ESR Anime Video v3 (Animation 2D/3D)</option>
+                        <option value="auto" selected>Auto Detection (Recommended)</option>
+                        <option value="realesrgan-x4plus">Real-ESRGAN x4plus (Real Video)</option>
+                        <option value="realesr-animevideov3">Real-ESR Anime Video v3 (2D/3D Animation)</option>
                         <option value="digital-art-4x">Digital Art 4x (CGI / Upscayl)</option>
                         <option value="ultrasharp-4x">UltraSharp 4x (Photos/Textures)</option>
                     </select>
@@ -662,23 +727,23 @@ HTML_CONTENT = """<!DOCTYPE html>
 
             <div class="grid">
                 <div class="form-group">
-                    <label for="workers">Nombre de Chunks en Parallèle</label>
+                    <label for="workers">Parallel Chunks</label>
                     <input type="number" id="workers" min="1" max="8" value="2">
                 </div>
 
                 <div class="form-group">
-                    <label style="margin-bottom: 15px;">Filtres & Améliorations</label>
+                    <label style="margin-bottom: 15px;">Filters & Enhancements</label>
                     <div class="checkbox-group">
                         <input type="checkbox" id="denoise">
-                        <label for="denoise" style="margin-bottom: 0; font-weight: normal;">Réduire le scintillement (Denoise temporel)</label>
+                        <label for="denoise" style="margin-bottom: 0; font-weight: normal;">Reduce Flickering (Temporal Denoise)</label>
                     </div>
                     <div class="checkbox-group">
                         <input type="checkbox" id="interpolate">
-                        <label for="interpolate" style="margin-bottom: 0; font-weight: normal;">Fluidifier à 60 FPS (Interpolation)</label>
+                        <label for="interpolate" style="margin-bottom: 0; font-weight: normal;">Smooth to 60 FPS (Interpolation)</label>
                     </div>
                     <div class="checkbox-group">
                         <input type="checkbox" id="recursive">
-                        <label for="recursive" style="margin-bottom: 0; font-weight: normal;">Traiter les sous-dossiers récursivement</label>
+                        <label for="recursive" style="margin-bottom: 0; font-weight: normal;">Process subfolders recursively</label>
                     </div>
                 </div>
             </div>
@@ -688,22 +753,23 @@ HTML_CONTENT = """<!DOCTYPE html>
             <div class="status-side">
                 <div class="progress-card" id="progressCard">
                     <div class="progress-title">
-                        <span id="progressSegment">Prêt à démarrer</span>
+                        <span id="progressSegment">Ready to start</span>
                         <span id="progressText">0%</span>
                     </div>
-                    <div class="progress-bar-container">
+                    <div class="progress-bar-container" style="margin-bottom: 6px;">
                         <div class="progress-bar-fill" id="progressBar"></div>
                     </div>
+                    <div id="timeEstimate" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 14px; text-align: right;">Elapsed: 00:00 | ETA: --:--</div>
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span>Statut : <span class="status-badge status-idle" id="statusBadge">IDLE</span></span>
+                        <span>Status: <span class="status-badge status-idle" id="statusBadge">IDLE</span></span>
                         <span id="outputSuccess" style="color: #34d399; font-weight: 600;"></span>
                     </div>
-                    <div class="log-terminal" id="logTerminal">En attente de lancement d'upscaling...</div>
+                    <div class="log-terminal" id="logTerminal">Waiting to start upscaling...</div>
                 </div>
 
                 <div class="btn-container">
-                    <button type="submit" form="upscaleForm" class="btn-primary" id="submitBtn">Lancer l'Upscaling par IA</button>
-                    <button type="button" class="btn-cancel" id="cancelBtn" onclick="cancelUpscale()" style="display:none;">Annuler</button>
+                    <button type="submit" form="upscaleForm" class="btn-primary" id="submitBtn">Start AI Upscaling</button>
+                    <button type="button" class="btn-cancel" id="cancelBtn" onclick="cancelUpscale()" style="display:none;">Cancel</button>
                 </div>
             </div>
         </div>
@@ -713,14 +779,14 @@ HTML_CONTENT = """<!DOCTYPE html>
     <div id="explorerModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Explorateur de Fichiers</h2>
+                <h2>File Explorer</h2>
                 <button type="button" class="close-btn" onclick="closeExplorer()">&times;</button>
             </div>
             <div class="breadcrumbs" id="breadcrumbs"></div>
             <div class="file-list" id="fileList"></div>
             <div class="modal-footer">
-                <button type="button" class="btn-primary" id="selectCurrentFolderBtn" style="flex:none; width:auto; padding: 10px 16px;">Sélectionner ce dossier actuel</button>
-                <button type="button" class="btn-cancel" onclick="closeExplorer()" style="flex:none; width:auto; padding: 10px 16px;">Fermer</button>
+                <button type="button" class="btn-primary" id="selectCurrentFolderBtn" style="flex:none; width:auto; padding: 10px 16px;">Select Current Folder</button>
+                <button type="button" class="btn-cancel" onclick="closeExplorer()" style="flex:none; width:auto; padding: 10px 16px;">Close</button>
             </div>
         </div>
     </div>
@@ -728,6 +794,18 @@ HTML_CONTENT = """<!DOCTYPE html>
     <script>
         let pollInterval = null;
         let activeInputId = "";
+        let upscaleStartTime = null;
+
+        function formatTime(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = seconds % 60;
+            const pad = (n) => String(n).padStart(2, "0");
+            if (h > 0) {
+                return `${pad(h)}:${pad(m)}:${pad(s)}`;
+            }
+            return `${pad(m)}:${pad(s)}`;
+        }
 
         function openExplorer(inputId, isFolder = false) {
             if (window.pywebview && window.pywebview.api) {
@@ -764,7 +842,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                     const item = document.createElement("div");
                     item.className = "file-item";
                     item.onclick = () => loadDir(data.parent_path);
-                    item.innerHTML = `<span class="file-icon">📁</span><span class="file-name">.. (Dossier Parent)</span>`;
+                    item.innerHTML = `<span class="file-icon">📁</span><span class="file-name">.. (Parent Folder)</span>`;
                     list.appendChild(item);
                 }
                 
@@ -804,15 +882,18 @@ HTML_CONTENT = """<!DOCTYPE html>
             event.preventDefault();
             
             // Reset UI states immediately for a responsive experience
-            document.getElementById("logTerminal").innerText = "Lancement de l'upscaling par IA...";
+            document.getElementById("logTerminal").innerText = "Launching AI Upscaling...";
             document.getElementById("progressText").innerText = "0%";
             document.getElementById("progressBar").style.width = "0%";
-            document.getElementById("progressSegment").innerText = "Initialisation...";
+            document.getElementById("progressSegment").innerText = "Initializing...";
             const badge = document.getElementById("statusBadge");
             badge.innerText = "RUNNING";
             badge.className = "status-badge status-running";
             document.getElementById("progressCard").style.display = "block";
             document.getElementById("outputSuccess").innerText = "";
+            
+            upscaleStartTime = Date.now();
+            document.getElementById("timeEstimate").innerText = "Elapsed: 00:00 | ETA: --:--";
             
             const params = {
                 input_file: document.getElementById("input_file").value,
@@ -858,12 +939,26 @@ HTML_CONTENT = """<!DOCTYPE html>
                 term.innerText = state.logs.join("\\n");
                 term.scrollTop = term.scrollHeight;
                 
+                if (upscaleStartTime) {
+                    const elapsedSec = Math.floor((Date.now() - upscaleStartTime) / 1000);
+                    if (state.progress > 0) {
+                        const totalSec = elapsedSec / (state.progress / 100.0);
+                        const remainingSec = Math.max(0, Math.floor(totalSec - elapsedSec));
+                        document.getElementById("timeEstimate").innerText = `Elapsed: ${formatTime(elapsedSec)} | ETA: ${formatTime(remainingSec)}`;
+                    } else {
+                        document.getElementById("timeEstimate").innerText = `Elapsed: ${formatTime(elapsedSec)} | ETA: --:--`;
+                    }
+                    if (state.status === "completed") {
+                        document.getElementById("timeEstimate").innerText = `Finished in: ${formatTime(elapsedSec)}`;
+                    }
+                }
+                
                 if (state.status === "completed") {
                     clearInterval(pollInterval);
                     document.getElementById("submitBtn").style.display = "block";
                     document.getElementById("cancelBtn").style.display = "none";
                     if (state.output_file) {
-                        document.getElementById("outputSuccess").innerText = "Sortie : " + state.output_file.split("/").pop();
+                        document.getElementById("outputSuccess").innerText = "Output: " + state.output_file.split("/").pop();
                     }
                 } else if (state.status === "failed") {
                     clearInterval(pollInterval);
