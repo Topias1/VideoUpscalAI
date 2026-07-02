@@ -30,7 +30,7 @@ exe = EXE(
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
-    codesign_identity=None,
+    codesign_identity='Developer ID Application: Antoine Weytens (K9KAJBBY5C)',
     entitlements_file=None,
     icon=['logo.icns'],
 )
@@ -47,5 +47,6 @@ app = BUNDLE(
     coll,
     name='VideoUpscalAI.app',
     icon='logo.icns',
-    bundle_identifier=None,
+    bundle_identifier='com.electrateam.VideoUpscalAI',
+    codesign_identity='Developer ID Application: Antoine Weytens (K9KAJBBY5C)',
 )
