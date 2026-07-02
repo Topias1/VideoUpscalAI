@@ -11,6 +11,10 @@ def main(argv: List[str] = None) -> int:
     if argv is None:
         argv = sys.argv[1:]
 
+    # Filter out macOS Cocoa and PyInstaller internal environment options
+    ignored_args = {"-B", "-S", "-I", "-c"}
+    argv = [arg for arg in argv if arg not in ignored_args and not arg.startswith("-psn_")]
+
     parser = argparse.ArgumentParser(
         description="Apple Silicon Video Upscaler CLI pipeline using Real-ESRGAN-ncnn-vulkan and ffmpeg."
     )
