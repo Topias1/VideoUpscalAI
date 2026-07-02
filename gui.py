@@ -31,14 +31,14 @@ def run_upscale_thread(cmd_args):
     if getattr(sys, 'frozen', False):
         bundle_dir = sys._MEIPASS
         python_bin = sys.executable
+        cmd = [python_bin] + cmd_args
     else:
         bundle_dir = os.path.dirname(os.path.abspath(__file__))
         python_bin = os.path.join(bundle_dir, ".venv", "bin", "python")
         if not os.path.exists(python_bin):
             python_bin = sys.executable
-            
-    upscale_script = os.path.join(bundle_dir, "upscale.py")
-    cmd = [python_bin, upscale_script] + cmd_args
+        upscale_script = os.path.join(bundle_dir, "upscale.py")
+        cmd = [python_bin, upscale_script] + cmd_args
     
     try:
         active_process = subprocess.Popen(
@@ -288,29 +288,29 @@ HTML_CONTENT = """<!DOCTYPE html>
             border: 1px solid var(--border-color);
             border-radius: 24px;
             backdrop-filter: blur(16px);
-            padding: 40px;
+            padding: 20px 30px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
         }
 
         h1 {
-            font-size: 2.2rem;
+            font-size: 1.8rem;
             font-weight: 800;
             background: var(--accent);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
             text-align: center;
         }
 
         .subtitle {
-            font-size: 1rem;
+            font-size: 0.95rem;
             color: var(--text-muted);
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 16px;
         }
 
         .form-group {
-            margin-bottom: 24px;
+            margin-bottom: 14px;
         }
 
         label {
@@ -328,7 +328,7 @@ HTML_CONTENT = """<!DOCTYPE html>
 
         input[type="text"], select, input[type="number"] {
             width: 100%;
-            padding: 14px 16px;
+            padding: 10px 12px;
             background: rgba(17, 24, 39, 0.8);
             border: 1px solid var(--border-color);
             border-radius: 12px;
@@ -345,7 +345,7 @@ HTML_CONTENT = """<!DOCTYPE html>
         }
 
         .btn-browse {
-            padding: 12px 18px;
+            padding: 10px 14px;
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--border-color);
             border-radius: 12px;
@@ -386,7 +386,7 @@ HTML_CONTENT = """<!DOCTYPE html>
         .btn-container {
             display: flex;
             gap: 16px;
-            margin-top: 32px;
+            margin-top: 20px;
         }
 
         button {
@@ -425,8 +425,8 @@ HTML_CONTENT = """<!DOCTYPE html>
         /* Progress Card */
         .progress-card {
             display: none;
-            margin-top: 40px;
-            padding: 24px;
+            margin-top: 20px;
+            padding: 16px;
             background: rgba(17, 24, 39, 0.6);
             border: 1px solid var(--border-color);
             border-radius: 16px;
@@ -457,7 +457,7 @@ HTML_CONTENT = """<!DOCTYPE html>
 
         .log-terminal {
             width: 100%;
-            height: 200px;
+            height: 120px;
             background: #05070c;
             border: 1px solid var(--border-color);
             border-radius: 10px;
@@ -467,7 +467,7 @@ HTML_CONTENT = """<!DOCTYPE html>
             color: #34d399;
             overflow-y: scroll;
             white-space: pre-wrap;
-            margin-top: 16px;
+            margin-top: 12px;
         }
 
         .status-badge {
@@ -585,8 +585,8 @@ HTML_CONTENT = """<!DOCTYPE html>
 </head>
 <body>
     <div class="container">
-        <div style="text-align: center; margin-bottom: 24px;">
-            <img src="/logo.jpg" alt="Logo" style="width: 120px; height: 120px; border-radius: 28px; box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4); border: 2px solid rgba(255, 255, 255, 0.1); display: inline-block;">
+        <div style="text-align: center; margin-bottom: 12px;">
+            <img src="/logo.jpg" alt="Logo" style="width: 80px; height: 80px; border-radius: 20px; box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4); border: 2px solid rgba(255, 255, 255, 0.1); display: inline-block;">
         </div>
         <h1>Apple Silicon Video Upscaler</h1>
         <div class="subtitle">Interface graphique locale de traitement IA</div>
