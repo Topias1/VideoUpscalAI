@@ -141,18 +141,31 @@ def load_or_create_manifest(
             
             # Check for mismatch in resolved parameters
             old_params = manifest.get("resolved_params", {})
+            mismatch = False
             for k, v in resolved_params.items():
                 if old_params.get(k) != v:
-                    raise ManifestMismatchError(
-                        f"Parameter mismatch for parameter '{k}' on resume.\n"
-                        f"Stored in manifest: {old_params.get(k)}\n"
-                        f"Current parameters: {v}\n"
-                        f"Please use a fresh work directory or delete the existing manifest.json."
-                    )
-            return manifest
+                    print(f"WARNING: Parameter mismatch for parameter '{k}' on resume (Stored: {old_params.get(k)}, Current: {v}).")
+                    mismatch = True
+                    break
+            
+            if mismatch:
+                print("Clearing stale work directory to start a fresh run.")
+                import shutil
+                work_dir_parent = os.path.dirname(manifest_path)
+                for sub in ("seg_in", "seg_out", "frames", "up"):
+                    p = os.path.join(work_dir_parent, sub)
+                    if os.path.exists(p):
+                        try:
+                            shutil.rmtree(p)
+                        except Exception:
+                            pass
+                try:
+                    os.remove(manifest_path)
+                except Exception:
+                    pass
+            else:
+                return manifest
         except (json.JSONDecodeError, KeyError) as e:
-            if isinstance(e, ManifestMismatchError):
-                raise
             # Stale/corrupt manifest, overwrite it
             pass
 
@@ -249,7 +262,9 @@ def run_single_file(
         "bitrate": opts.get("bitrate"),
         "hdr_mode": opts["hdr_mode"],
         "vfr_mode": opts["vfr_mode"],
-        "chunk_seconds": opts["chunk_seconds"]
+        "chunk_seconds": opts["chunk_seconds"],
+        "interpolate_fps": opts.get("interpolate_fps"),
+        "temporal_denoise": opts.get("temporal_denoise")
     }
     manifest = load_or_create_manifest(manifest_path, input_abs, resolved_params, info)
 
