@@ -76,7 +76,14 @@ def run_cmd_checked(cmd: List[str], file_path: str, stage: str, chunk: Optional[
             f"Failed to execute command for {stage}{chunk_info} for file {file_path}: {e}"
         )
 
-def run_realesrgan_stream(cmd: List[str], file_path: str, chunk: str, show_progress: bool = True) -> None:
+def run_realesrgan_stream(
+    cmd: List[str],
+    file_path: str,
+    chunk: str,
+    show_progress: bool = True,
+    up_dir: Optional[str] = None,
+    total_frames: Optional[int] = None
+) -> None:
     try:
         proc = subprocess.Popen(
             cmd,
@@ -88,6 +95,7 @@ def run_realesrgan_stream(cmd: List[str], file_path: str, chunk: str, show_progr
         
         # Buffer to collect stderr characters for progress parsing
         buffer = []
+        last_pct = -1.0
         while True:
             char = proc.stderr.read(1)
             if not char:
@@ -100,10 +108,12 @@ def run_realesrgan_stream(cmd: List[str], file_path: str, chunk: str, show_progr
                         val_str = line.split("%")[0].strip().split()[-1]
                         pct = float(val_str)
                         pct = max(0.0, min(100.0, pct))
-                        bar_len = 25
-                        filled_len = int(round(bar_len * pct / 100))
-                        bar = "█" * filled_len + "░" * (bar_len - filled_len)
-                        print(f"\r  [realesrgan] {chunk}: [{bar}] {pct:.2f}%", end="", flush=True)
+                        if pct - last_pct >= 1.0 or pct == 100.0 or last_pct < 0:
+                            last_pct = pct
+                            bar_len = 25
+                            filled_len = int(round(bar_len * pct / 100))
+                            bar = "█" * filled_len + "░" * (bar_len - filled_len)
+                            print(f"\r  [realesrgan] {chunk}: [{bar}] {pct:.2f}%", end="", flush=True)
                     except Exception:
                         print(f"\r  [realesrgan] {chunk} progress: {line}", end="", flush=True)
             else:
@@ -391,7 +401,14 @@ def run_single_file(
                     opts["jobs"],
                     model_path=opts.get("model_path")
                 )
-                run_realesrgan_stream(real_cmd, input_abs, seg_name, show_progress=(workers == 1))
+                run_realesrgan_stream(
+                    real_cmd,
+                    input_abs,
+                    seg_name,
+                    show_progress=True,
+                    up_dir=up_dir,
+                    total_frames=png_count
+                )
 
             # Verify upscale PNGs match input count
             up_png_files = [f for f in os.listdir(up_dir) if f.endswith(".png")]

@@ -41,18 +41,12 @@ def run_upscale_thread(cmd_args):
         cmd = [python_bin, upscale_script] + cmd_args
     
     try:
-        import os
-        env = os.environ.copy()
-        env["PYTHONUNBUFFERED"] = "1"
-        env["VIDEO_UPSCALER_CLI"] = "1"
-        
         active_process = subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
-            bufsize=1,
-            env=env
+            bufsize=1
         )
         
         buffer = []
@@ -265,24 +259,15 @@ HTML_CONTENT = """<!DOCTYPE html>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Apple Silicon Video Upscaler</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* Perceptually uniform OKLCH colors (restrained system-cohesive blue/indigo palette) */
-            --bg-color: oklch(0.12 0.008 250);
-            --card-bg: oklch(0.15 0.005 250);
-            --accent-color: oklch(0.6 0.18 250);
-            --accent-hover: oklch(0.55 0.18 250);
-            --accent-active: oklch(0.5 0.18 250);
-            --text-color: oklch(0.95 0.005 250);
-            --text-muted: oklch(0.65 0.01 250);
-            --border-color: oklch(0.22 0.01 250);
-            
-            --success-color: oklch(0.68 0.16 140);
-            --success-bg: oklch(0.68 0.16 140 / 0.12);
-            --error-color: oklch(0.6 0.18 20);
-            --error-bg: oklch(0.6 0.18 20 / 0.12);
-            --warning-color: oklch(0.75 0.15 65);
-            --warning-bg: oklch(0.75 0.15 65 / 0.12);
+            --bg-color: #0b0f19;
+            --card-bg: rgba(22, 28, 45, 0.6);
+            --accent: linear-gradient(135deg, #6366f1, #06b6d4);
+            --text-color: #f3f4f6;
+            --text-muted: #9ca3af;
+            --border-color: rgba(255, 255, 255, 0.08);
         }
 
         * {
@@ -292,251 +277,181 @@ HTML_CONTENT = """<!DOCTYPE html>
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Outfit', sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
             min-height: 100vh;
-            margin: 0;
-            padding: 0;
-            background-image: radial-gradient(circle at top right, oklch(0.6 0.18 250 / 0.08), transparent 400px),
-                              radial-gradient(circle at bottom left, oklch(0.68 0.16 140 / 0.05), transparent 400px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-image: radial-gradient(circle at top right, rgba(99, 102, 241, 0.15), transparent 400px),
+                              radial-gradient(circle at bottom left, rgba(6, 182, 212, 0.15), transparent 400px);
+            padding: 20px;
         }
 
         .container {
             width: 100%;
-            min-height: 100vh;
-            box-sizing: border-box;
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding-bottom: 16px;
-            margin-bottom: 20px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .header-brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .header-logo {
-            width: 42px;
-            height: 42px;
-            border-radius: 10px;
+            max-width: 800px;
+            background: var(--card-bg);
             border: 1px solid var(--border-color);
-            background-color: var(--card-bg);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            border-radius: 24px;
+            backdrop-filter: blur(16px);
+            padding: 20px 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
         }
 
         h1 {
-            font-size: 1.35rem;
-            font-weight: 700;
-            color: var(--text-color);
-            letter-spacing: -0.02em;
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: var(--accent);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 4px;
+            text-align: center;
         }
 
         .subtitle {
-            font-size: 0.85rem;
+            font-size: 0.95rem;
             color: var(--text-muted);
-            margin-top: 2px;
-        }
-
-        .main-layout {
-            display: grid;
-            grid-template-columns: 1.1fr 1fr;
-            gap: 24px;
-            align-items: stretch;
-            flex-grow: 1;
-        }
-
-        .form-side {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
+            text-align: center;
+            margin-bottom: 16px;
         }
 
         .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
+            margin-bottom: 14px;
         }
 
         label {
-            font-size: 0.85rem;
+            display: block;
+            font-size: 0.95rem;
             font-weight: 600;
-            color: oklch(0.75 0.01 250);
+            margin-bottom: 8px;
+            color: var(--text-color);
         }
 
         .input-with-btn {
             display: flex;
-            gap: 8px;
+            gap: 12px;
         }
 
         input[type="text"], select, input[type="number"] {
             width: 100%;
             padding: 10px 12px;
-            background: var(--card-bg);
+            background: rgba(17, 24, 39, 0.8);
             border: 1px solid var(--border-color);
-            border-radius: 8px;
+            border-radius: 12px;
             color: var(--text-color);
             font-family: inherit;
-            font-size: 0.9rem;
-            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
         }
 
         input[type="text"]:focus, select:focus, input[type="number"]:focus {
-            border-color: var(--accent-color);
+            border-color: #6366f1;
             outline: none;
-            box-shadow: 0 0 0 2px oklch(0.6 0.18 250 / 0.15);
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
         }
 
         .btn-browse {
-            padding: 8px 14px;
-            background: var(--card-bg);
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--border-color);
-            border-radius: 8px;
+            border-radius: 12px;
             color: var(--text-color);
             cursor: pointer;
             font-weight: 600;
-            font-size: 0.85rem;
             display: flex;
             align-items: center;
-            gap: 6px;
-            transition: background-color 0.15s ease, border-color 0.15s ease;
+            gap: 8px;
+            transition: all 0.2s ease;
         }
 
         .btn-browse:hover {
-            background: oklch(0.2 0.008 250);
-            border-color: oklch(0.3 0.01 250);
+            background: rgba(99, 102, 241, 0.15);
+            border-color: #6366f1;
         }
 
-        .form-grid {
+        .grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 16px;
+            gap: 20px;
         }
 
-        .checkbox-wrapper {
+        .checkbox-group {
             display: flex;
-            align-items: flex-start;
+            align-items: center;
             gap: 12px;
-            padding: 12px;
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            margin-bottom: 8px;
-            transition: border-color 0.15s ease, background-color 0.15s ease;
+            margin-top: 10px;
         }
 
-        .checkbox-wrapper:hover {
-            border-color: oklch(0.3 0.01 250);
-            background: oklch(0.18 0.005 250);
-        }
-
-        .checkbox-wrapper input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            accent-color: var(--accent-color);
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: #6366f1;
             cursor: pointer;
-            margin-top: 2px;
-        }
-
-        .checkbox-label-title {
-            font-weight: 600;
-            font-size: 0.88rem;
-            color: var(--text-color);
-            cursor: pointer;
-            display: block;
-        }
-
-        .checkbox-label-desc {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            display: block;
-            margin-top: 3px;
-            line-height: 1.35;
         }
 
         .btn-container {
             display: flex;
-            gap: 12px;
-            margin-top: 16px;
+            gap: 16px;
+            margin-top: 20px;
         }
 
         button {
             flex: 1;
-            padding: 12px;
+            padding: 16px;
             font-family: inherit;
-            font-size: 0.95rem;
+            font-size: 1.05rem;
             font-weight: 600;
             border: none;
-            border-radius: 8px;
+            border-radius: 14px;
             cursor: pointer;
-            transition: background-color 0.15s ease, opacity 0.15s ease;
+            transition: all 0.3s ease;
         }
 
         .btn-primary {
-            background: var(--accent-color);
+            background: var(--accent);
             color: white;
-            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
         }
 
         .btn-primary:hover {
-            background: var(--accent-hover);
-        }
-
-        .btn-primary:active {
-            background: var(--accent-active);
+            opacity: 0.95;
+            transform: translateY(-2px);
         }
 
         .btn-cancel {
-            background: var(--error-bg);
-            color: var(--error-color);
-            border: 1px solid oklch(0.6 0.18 20 / 0.3);
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.4);
         }
 
         .btn-cancel:hover {
-            background: oklch(0.6 0.18 20 / 0.2);
-        }
-
-        .status-side {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
+            background: rgba(239, 68, 68, 0.3);
         }
 
         /* Progress Card */
         .progress-card {
-            padding: 20px;
-            background: var(--card-bg);
+            display: none;
+            margin-top: 20px;
+            padding: 16px;
+            background: rgba(17, 24, 39, 0.6);
             border: 1px solid var(--border-color);
-            border-radius: 12px;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+            border-radius: 16px;
         }
 
         .progress-title {
             display: flex;
             justify-content: space-between;
             font-weight: 600;
-            font-size: 0.9rem;
             margin-bottom: 12px;
         }
 
         .progress-bar-container {
             width: 100%;
-            height: 8px;
-            background: oklch(0.2 0.005 250);
-            border-radius: 4px;
+            height: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
             overflow: hidden;
             margin-bottom: 16px;
         }
@@ -544,50 +459,36 @@ HTML_CONTENT = """<!DOCTYPE html>
         .progress-bar-fill {
             width: 0%;
             height: 100%;
-            background: var(--accent-color);
-            transition: width 0.3s ease;
-        }
-
-        .status-meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.85rem;
-            color: var(--text-muted);
+            background: var(--accent);
+            transition: width 0.4s ease;
         }
 
         .log-terminal {
             width: 100%;
-            flex-grow: 1;
-            min-height: 250px;
-            height: 0;
-            background: oklch(0.08 0.005 250);
+            height: 120px;
+            background: #05070c;
             border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 14px;
-            font-family: SF Mono, Monaco, Consolas, "Liberation Mono", monospace;
-            font-size: 0.82rem;
-            color: oklch(0.85 0.02 140);
+            border-radius: 10px;
+            padding: 12px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: #34d399;
             overflow-y: scroll;
             white-space: pre-wrap;
-            margin-top: 14px;
-            line-height: 1.4;
+            margin-top: 12px;
         }
 
         .status-badge {
             display: inline-block;
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
         }
 
-        .status-idle { background: oklch(0.2 0.005 250); color: var(--text-muted); }
-        .status-running { background: oklch(0.6 0.18 250 / 0.15); color: var(--accent-color); }
-        .status-completed { background: var(--success-bg); color: var(--success-color); }
-        .status-failed { background: var(--error-bg); color: var(--error-color); }
+        .status-running { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .status-completed { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .status-failed { background: rgba(239, 68, 68, 0.2); color: #f87171; }
 
         /* File Explorer Modal */
         .modal {
@@ -598,42 +499,37 @@ HTML_CONTENT = """<!DOCTYPE html>
             top: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(4px);
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
             align-items: center;
             justify-content: center;
         }
 
         .modal-content {
-            background: oklch(0.14 0.005 250);
+            background: rgba(17, 24, 39, 0.95);
             border: 1px solid var(--border-color);
-            border-radius: 16px;
+            border-radius: 20px;
             width: 90%;
             max-width: 600px;
             max-height: 80%;
             display: flex;
             flex-direction: column;
-            padding: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            padding: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
 
         .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
-        }
-
-        .modal-header h2 {
-            font-size: 1.1rem;
-            font-weight: 700;
+            margin-bottom: 16px;
         }
 
         .close-btn {
             background: none;
             border: none;
             color: var(--text-muted);
-            font-size: 1.5rem;
+            font-size: 2rem;
             cursor: pointer;
             line-height: 1;
         }
@@ -643,12 +539,12 @@ HTML_CONTENT = """<!DOCTYPE html>
         }
 
         .breadcrumbs {
-            font-size: 0.85rem;
-            color: var(--accent-color);
-            background: oklch(0.08 0.005 250);
-            padding: 6px 10px;
-            border-radius: 6px;
-            margin-bottom: 12px;
+            font-size: 0.9rem;
+            color: #6366f1;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
             word-break: break-all;
             cursor: pointer;
         }
@@ -656,157 +552,136 @@ HTML_CONTENT = """<!DOCTYPE html>
         .file-list {
             flex: 1;
             overflow-y: auto;
-            min-height: 250px;
-            max-height: 350px;
+            min-height: 300px;
+            max-height: 400px;
             border: 1px solid var(--border-color);
-            border-radius: 8px;
-            background: oklch(0.08 0.005 250);
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.2);
         }
 
         .file-item {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 8px 12px;
-            border-bottom: 1px solid oklch(0.2 0.005 250 / 0.5);
+            gap: 12px;
+            padding: 10px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
             cursor: pointer;
-            transition: background-color 0.15s ease;
-            font-size: 0.85rem;
+            transition: background 0.2s ease;
         }
 
         .file-item:hover {
-            background: oklch(0.6 0.18 250 / 0.08);
+            background: rgba(99, 102, 241, 0.1);
         }
 
         .file-icon {
-            font-size: 1.1rem;
+            font-size: 1.2rem;
         }
 
         .file-name {
+            font-size: 0.95rem;
             color: var(--text-color);
             word-break: break-all;
         }
 
         .modal-footer {
-            margin-top: 12px;
+            margin-top: 16px;
             display: flex;
-            justify-content: flex-end;
+            justify-content: space-between;
+            align-items: center;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <header>
-            <div class="header-brand">
-                <img src="/logo.jpg" alt="Logo" class="header-logo">
-                <div>
-                    <h1>Apple Silicon Video Upscaler</h1>
-                    <div class="subtitle">Interface de traitement local haute performance</div>
+        <div style="text-align: center; margin-bottom: 12px;">
+            <img src="/logo.jpg" alt="Logo" style="width: 80px; height: 80px; border-radius: 20px; box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4); border: 2px solid rgba(255, 255, 255, 0.1); display: inline-block;">
+        </div>
+        <h1>Apple Silicon Video Upscaler</h1>
+        <div class="subtitle">Interface graphique locale de traitement IA</div>
+
+        <form id="upscaleForm" onsubmit="startUpscale(event)">
+            <div class="form-group">
+                <label for="input_file">Vidéo ou Dossier source</label>
+                <div class="input-with-btn">
+                    <input type="text" id="input_file" required placeholder="Sélectionnez un fichier ou un dossier...">
+                    <button type="button" class="btn-browse" onclick="openExplorer('input_file', false)">🎥 Fichier</button>
+                    <button type="button" class="btn-browse" onclick="openExplorer('input_file', true)">📁 Dossier</button>
                 </div>
             </div>
-        </header>
 
-        <div class="main-layout">
-            <div class="form-side">
-                <form id="upscaleForm" onsubmit="startUpscale(event)">
-                    <div class="form-group">
-                        <label for="input_file">Vidéo ou Dossier source</label>
-                        <div class="input-with-btn">
-                            <input type="text" id="input_file" required placeholder="Sélectionnez un fichier ou un dossier...">
-                            <button type="button" class="btn-browse" onclick="openExplorer('input_file', false)">🎥 Fichier</button>
-                            <button type="button" class="btn-browse" onclick="openExplorer('input_file', true)">📁 Dossier</button>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="output_file">Dossier de sortie (Optionnel)</label>
-                        <div class="input-with-btn">
-                            <input type="text" id="output_file" placeholder="Ex: /Users/nom_utilisateur/Downloads/">
-                            <button type="button" class="btn-browse" onclick="openExplorer('output_file', true)">📁 Dossier</button>
-                        </div>
-                    </div>
-
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="preset">Preset de Résolution</label>
-                            <select id="preset">
-                                <option value="480p">480p (Target: 480px height)</option>
-                                <option value="720p">720p (Target: 720px height)</option>
-                                <option value="1080p" selected>1080p (Target: 1080px height)</option>
-                                <option value="4k">4K (Target: 2160px height)</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="model">Modèle d'Upscaling IA</label>
-                            <select id="model">
-                                <option value="auto" selected>Détection Automatique (Recommandé)</option>
-                                <option value="realesrgan-x4plus">Real-ESRGAN x4plus (Films Réels)</option>
-                                <option value="realesr-animevideov3">Real-ESR Anime Video v3 (Animation 2D/3D)</option>
-                                <option value="digital-art-4x">Digital Art 4x (CGI / Upscayl)</option>
-                                <option value="ultrasharp-4x">UltraSharp 4x (Photos/Textures)</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="workers">Nombre de Chunks en Parallèle</label>
-                            <input type="number" id="workers" min="1" max="8" value="2">
-                        </div>
-                    </div>
-
-                    <div class="form-group" style="margin-top: 8px;">
-                        <label style="margin-bottom: 4px;">Filtres & Améliorations</label>
-                        
-                        <div class="checkbox-wrapper">
-                            <input type="checkbox" id="denoise">
-                            <div>
-                                <label for="denoise" class="checkbox-label-title">Réduction de bruit & scintillement</label>
-                                <span class="checkbox-label-desc">Applique un débruitage temporel pour stabiliser l'image.</span>
-                            </div>
-                        </div>
-
-                        <div class="checkbox-wrapper">
-                            <input type="checkbox" id="interpolate">
-                            <div>
-                                <label for="interpolate" class="checkbox-label-title">Fluidification temporelle (60 FPS)</label>
-                                <span class="checkbox-label-desc">Interpole les images manquantes pour un rendu ultra-fluide.</span>
-                            </div>
-                        </div>
-
-                        <div class="checkbox-wrapper">
-                            <input type="checkbox" id="recursive">
-                            <div>
-                                <label for="recursive" class="checkbox-label-title">Recherche récursive dans les sous-dossiers</label>
-                                <span class="checkbox-label-desc">Scanne récursivement les répertoires pour trouver toutes les vidéos.</span>
-                            </div>
-                        </div>
-                    </div>
-                </form>
-            </div>
-            
-            <div class="status-side">
-                <div class="progress-card" id="progressCard">
-                    <div class="progress-title">
-                        <span id="progressSegment">Prêt à démarrer</span>
-                        <span id="progressText">0%</span>
-                    </div>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar-fill" id="progressBar"></div>
-                    </div>
-                    <div class="status-meta">
-                        <span>Statut : <span class="status-badge status-idle" id="statusBadge">IDLE</span></span>
-                        <span id="outputSuccess" style="color: var(--success-color); font-weight: 600;"></span>
-                    </div>
-                    <div class="log-terminal" id="logTerminal">En attente de lancement d'upscaling...</div>
-                </div>
-
-                <div class="btn-container">
-                    <button type="submit" form="upscaleForm" class="btn-primary" id="submitBtn">Lancer l'Upscaling par IA</button>
-                    <button type="button" class="btn-cancel" id="cancelBtn" onclick="cancelUpscale()" style="display:none;">Annuler</button>
+            <div class="form-group">
+                <label for="output_file">Dossier de sortie (Optionnel)</label>
+                <div class="input-with-btn">
+                    <input type="text" id="output_file" placeholder="Ex: /Users/nom_utilisateur/Downloads/">
+                    <button type="button" class="btn-browse" onclick="openExplorer('output_file', true)">📁 Dossier</button>
                 </div>
             </div>
+
+            <div class="grid">
+                <div class="form-group">
+                    <label for="preset">Preset de Résolution</label>
+                    <select id="preset">
+                        <option value="480p">480p (Target: 480px height)</option>
+                        <option value="720p">720p (Target: 720px height)</option>
+                        <option value="1080p" selected>1080p (Target: 1080px height)</option>
+                        <option value="4k">4K (Target: 2160px height)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="model">Modèle d'Upscaling IA</label>
+                    <select id="model">
+                        <option value="auto" selected>Détection Automatique (Recommandé)</option>
+                        <option value="realesrgan-x4plus">Real-ESRGAN x4plus (Films Réels)</option>
+                        <option value="realesr-animevideov3">Real-ESR Anime Video v3 (Animation 2D/3D)</option>
+                        <option value="digital-art-4x">Digital Art 4x (CGI / Upscayl)</option>
+                        <option value="ultrasharp-4x">UltraSharp 4x (Photos/Textures)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid">
+                <div class="form-group">
+                    <label for="workers">Nombre de Chunks en Parallèle</label>
+                    <input type="number" id="workers" min="1" max="8" value="2">
+                </div>
+
+                <div class="form-group">
+                    <label style="margin-bottom: 15px;">Filtres & Améliorations</label>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="denoise">
+                        <label for="denoise" style="margin-bottom: 0; font-weight: normal;">Réduire le scintillement (Denoise temporel)</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="interpolate">
+                        <label for="interpolate" style="margin-bottom: 0; font-weight: normal;">Fluidifier à 60 FPS (Interpolation)</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="recursive">
+                        <label for="recursive" style="margin-bottom: 0; font-weight: normal;">Traiter les sous-dossiers récursivement</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="btn-container">
+                <button type="submit" class="btn-primary" id="submitBtn">Lancer l'Upscaling par IA</button>
+                <button type="button" class="btn-cancel" id="cancelBtn" onclick="cancelUpscale()" style="display:none;">Annuler</button>
+            </div>
+        </form>
+
+        <div class="progress-card" id="progressCard">
+            <div class="progress-title">
+                <span id="progressSegment">Initialisation...</span>
+                <span id="progressText">0%</span>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill" id="progressBar"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span>Statut : <span class="status-badge" id="statusBadge">Idle</span></span>
+                <span id="outputSuccess" style="color: #34d399; font-weight: 600;"></span>
+            </div>
+            <div class="log-terminal" id="logTerminal"></div>
         </div>
     </div>
 
@@ -820,7 +695,8 @@ HTML_CONTENT = """<!DOCTYPE html>
             <div class="breadcrumbs" id="breadcrumbs"></div>
             <div class="file-list" id="fileList"></div>
             <div class="modal-footer">
-                <button type="button" class="btn-primary" id="selectCurrentFolderBtn" style="flex:none; width:auto; padding: 8px 14px; font-size: 0.85rem;">Sélectionner ce dossier</button>
+                <button type="button" class="btn-primary" id="selectCurrentFolderBtn" style="flex:none; width:auto; padding: 10px 16px;">Sélectionner ce dossier actuel</button>
+                <button type="button" class="btn-cancel" onclick="closeExplorer()" style="flex:none; width:auto; padding: 10px 16px;">Fermer</button>
             </div>
         </div>
     </div>
@@ -828,21 +704,6 @@ HTML_CONTENT = """<!DOCTYPE html>
     <script>
         let pollInterval = null;
         let activeInputId = "";
-
-        window.addEventListener("DOMContentLoaded", () => {
-            fetch("/status")
-            .then(res => res.json())
-            .then(state => {
-                if (state.status === "running") {
-                    document.getElementById("submitBtn").style.display = "none";
-                    document.getElementById("cancelBtn").style.display = "block";
-                    pollStatus();
-                    pollInterval = setInterval(pollStatus, 500);
-                } else if (state.status === "completed" || state.status === "failed") {
-                    pollStatus();
-                }
-            });
-        });
 
         function openExplorer(inputId, isFolder = false) {
             if (window.pywebview && window.pywebview.api) {
@@ -926,6 +787,7 @@ HTML_CONTENT = """<!DOCTYPE html>
             const badge = document.getElementById("statusBadge");
             badge.innerText = "RUNNING";
             badge.className = "status-badge status-running";
+            document.getElementById("progressCard").style.display = "block";
             document.getElementById("outputSuccess").innerText = "";
             
             const params = {
@@ -962,7 +824,7 @@ HTML_CONTENT = """<!DOCTYPE html>
             .then(state => {
                 document.getElementById("progressText").innerText = Math.round(state.progress) + "%";
                 document.getElementById("progressBar").style.width = state.progress + "%";
-                document.getElementById("progressSegment").innerText = state.current_segment || "Traitement...";
+                document.getElementById("progressSegment").innerText = state.current_segment;
                 
                 const badge = document.getElementById("statusBadge");
                 badge.innerText = state.status.toUpperCase();

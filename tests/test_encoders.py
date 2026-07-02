@@ -43,14 +43,13 @@ def test_select_encoder():
     assert "Invalid encoder option" in str(exc.value)
 
 def test_get_encoder_args_quality():
-    # videotoolbox quality mapping
+    # videotoolbox quality mapping fallback to preset bitrate
     vt_args = get_encoder_args("videotoolbox", "1080p", 60)
     assert "-c:v" in vt_args
     assert "hevc_videotoolbox" in vt_args
-    assert "-q:v" in vt_args
-    # vt quality maps directly to q:v
-    idx = vt_args.index("-q:v")
-    assert vt_args[idx + 1] == "60"
+    assert "-b:v" in vt_args
+    idx = vt_args.index("-b:v")
+    assert vt_args[idx + 1] == "12M"
     assert "-tag:v" in vt_args
     assert "hvc1" in vt_args
 

@@ -77,11 +77,8 @@ def get_encoder_args(
     
     if profile == "videotoolbox":
         args.extend(["-c:v", "hevc_videotoolbox"])
-        if bitrate:
-            args.extend(["-b:v", bitrate])
-        else:
-            # videotoolbox supports -q:v <0..100>
-            args.extend(["-q:v", str(quality)])
+        resolved_bitrate = bitrate if bitrate else PRESET_BITRATES.get(preset, "6M")
+        args.extend(["-b:v", resolved_bitrate])
         args.extend(["-tag:v", "hvc1", "-pix_fmt", "yuv420p"])
 
     elif profile == "nvenc":
