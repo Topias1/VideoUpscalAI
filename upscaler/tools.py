@@ -88,12 +88,16 @@ def detect_platform() -> str:
         return "other"
 
 def find_realesrgan(custom_path: Optional[str] = None) -> str:
-    # 0. Check PyInstaller bundle directory (frozen)
+    # 0. Check local project directory or PyInstaller bundle directory (frozen)
     if getattr(sys, "frozen", False):
-        bundle_dir = sys._MEIPASS
-        bundled = os.path.join(bundle_dir, "upscaler", "bin", "upscayl-bin")
-        if os.path.exists(bundled) and os.path.isfile(bundled):
-            return os.path.abspath(bundled)
+        base_dir = sys._MEIPASS
+    else:
+        # __file__ is in upscaler/tools.py, so go up one level to get project root
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        
+    local_bin = os.path.join(base_dir, "upscaler", "bin", "upscayl-bin")
+    if os.path.exists(local_bin) and os.path.isfile(local_bin):
+        return os.path.abspath(local_bin)
             
     # 1. custom_path
     if custom_path:
@@ -119,12 +123,6 @@ def find_realesrgan(custom_path: Optional[str] = None) -> str:
     path = shutil.which("realesrgan-ncnn-vulkan")
     if path:
         return os.path.abspath(path)
-        
-    # 4. Check standard macOS Upscayl path
-    if sys.platform == "darwin":
-        upscayl_bin = "/Applications/Upscayl.app/Contents/Resources/bin/upscayl-bin"
-        if os.path.exists(upscayl_bin) and os.path.isfile(upscayl_bin):
-            return os.path.abspath(upscayl_bin)
         
     # Standard installation hints
     plat = detect_platform()
