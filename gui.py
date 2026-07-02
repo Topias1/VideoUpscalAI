@@ -584,7 +584,7 @@ HTML_CONTENT = """<!DOCTYPE html>
             <div class="form-group">
                 <label for="output_file">Dossier de sortie (Optionnel)</label>
                 <div class="input-with-btn">
-                    <input type="text" id="output_file" placeholder="Ex: /Users/amnesia/Downloads/">
+                    <input type="text" id="output_file" placeholder="Ex: /Users/nom_utilisateur/Downloads/">
                     <button type="button" class="btn-browse" onclick="openExplorer('output_file', true)">📁 Dossier</button>
                 </div>
             </div>
