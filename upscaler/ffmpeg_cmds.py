@@ -73,16 +73,21 @@ def build_realesrgan_cmd(
     ]
     
     # Use specified model path, otherwise auto-resolve next to binary or in parent directory
+    is_upscayl = "upscayl-bin" in os.path.basename(realesrgan_bin).lower()
     if model_path:
         models_dir = os.path.abspath(model_path)
+        if os.path.isdir(models_dir):
+            cmd.extend(["-m", models_dir])
+    elif is_upscayl:
+        # upscayl-bin prepends its executable directory to the -m path, so pass relative '../models'
+        cmd.extend(["-m", "../models"])
     else:
         bin_dir = os.path.dirname(os.path.abspath(realesrgan_bin))
         models_dir = os.path.join(bin_dir, "models")
         if not os.path.isdir(models_dir):
             models_dir = os.path.abspath(os.path.join(bin_dir, "..", "models"))
-        
-    if os.path.isdir(models_dir):
-        cmd.extend(["-m", models_dir])
+        if os.path.isdir(models_dir):
+            cmd.extend(["-m", models_dir])
 
     if jobs != "auto":
         cmd.extend(["-j", jobs])

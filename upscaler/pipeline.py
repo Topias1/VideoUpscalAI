@@ -226,16 +226,32 @@ def run_single_file(
     # 1. Probe input
     info = probe_video(input_abs)
     
-    # Auto-detect model if 'auto' is selected
+    # Auto-detect or translate model name to match binary capabilities
+    is_upscayl = "upscayl" in os.path.basename(tools_info["realesrgan_path"]).lower()
     if opts.get("model") == "auto":
         from .probe import detect_video_type
         v_type = detect_video_type(input_abs)
-        is_upscayl = "upscayl" in os.path.basename(tools_info["realesrgan_path"]).lower()
         if v_type == "animation":
             opts["model"] = "digital-art-4x" if is_upscayl else "realesr-animevideov3"
         else:
             opts["model"] = "upscayl-standard-4x" if is_upscayl else "realesrgan-x4plus"
         print(f"Auto-detected content type: {v_type}. Using model: {opts['model']}")
+    else:
+        # Translate manual model name to match binary capabilities (Upscayl vs Standard)
+        model = opts.get("model")
+        if is_upscayl:
+            if model in ("realesrgan-x4plus", "realesrgan-x4plus-anime"):
+                opts["model"] = "upscayl-standard-4x"
+            elif model == "realesr-animevideov3":
+                opts["model"] = "upscayl-lite-4x"
+        else:
+            if model in ("upscayl-standard-4x", "high-fidelity-4x"):
+                opts["model"] = "realesrgan-x4plus"
+            elif model in ("upscayl-lite-4x", "digital-art-4x"):
+                opts["model"] = "realesr-animevideov3"
+            elif model == "ultrasharp-4x":
+                opts["model"] = "realesrgan-x4plus"
+        print(f"Using mapped model: {opts['model']}")
 
     # 2. Preset Guard & VFR/HDR validation
     check_preset_guard(info.height, opts["preset"])

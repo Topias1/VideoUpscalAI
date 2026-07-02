@@ -269,11 +269,8 @@ class GUIHandler(BaseHTTPRequestHandler):
             cmd_args.extend(["--preset", preset])
             cmd_args.extend(["--model", model])
             cmd_args.extend(["--workers", str(workers)])
+            cmd_args.append("--force")
             
-            upscayl_bin = "/Applications/Upscayl.app/Contents/Resources/bin/upscayl-bin"
-            if os.path.exists(upscayl_bin):
-                cmd_args.extend(["--realesrgan-bin", upscayl_bin])
-                
             if denoise:
                 cmd_args.append("--temporal-denoise")
             if interpolate:

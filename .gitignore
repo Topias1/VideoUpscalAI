@@ -14,3 +14,6 @@ dist/
 .agents/
 .gemini/
 .codex/
+upscaler/bin/
+upscaler/models/
+*.png

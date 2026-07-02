@@ -85,9 +85,9 @@ def run_batch(
         filename = os.path.basename(infile)
         progress_prefix = f"File {idx}/{total_files}: {filename}"
         
-        # Check if final output is already completed and valid
+        # Check if final output is already completed and valid (unless force is requested)
         skip_file = False
-        if os.path.exists(outfile):
+        if os.path.exists(outfile) and not opts.get("force", False):
             try:
                 # Probe output to check validity
                 out_info = probe_video(outfile)

@@ -151,6 +151,12 @@ def main(argv: List[str] = None) -> int:
         help="Keep intermediate segment files and folders on success."
     )
     parser.add_argument(
+        "--force",
+        action="store_true",
+        dest="force",
+        help="Force overwrite existing output files instead of resuming/skipping."
+    )
+    parser.add_argument(
         "--fail-fast",
         action="store_true",
         dest="fail_fast",
