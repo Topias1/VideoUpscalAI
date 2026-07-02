@@ -8,12 +8,22 @@ from typing import Dict, List, Optional, Tuple
 from . import ToolError
 
 def get_ffmpeg_path() -> str:
+    if getattr(sys, "frozen", False):
+        bundle_dir = sys._MEIPASS
+        bundled = os.path.join(bundle_dir, "ffmpeg")
+        if os.path.exists(bundled) and os.path.isfile(bundled):
+            return bundled
     path = shutil.which("ffmpeg")
     if not path:
         raise ToolError("ffmpeg binary not found in PATH.")
     return path
 
 def get_ffprobe_path() -> str:
+    if getattr(sys, "frozen", False):
+        bundle_dir = sys._MEIPASS
+        bundled = os.path.join(bundle_dir, "ffprobe")
+        if os.path.exists(bundled) and os.path.isfile(bundled):
+            return bundled
     path = shutil.which("ffprobe")
     if not path:
         raise ToolError("ffprobe binary not found in PATH.")
