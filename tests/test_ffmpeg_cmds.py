@@ -10,7 +10,8 @@ from upscaler.ffmpeg_cmds import (
 
 def test_build_split_cmd():
     cmd = build_split_cmd("/path/to/input.mp4", "/work", 12.0)
-    assert "ffmpeg" in cmd
+    from upscaler.tools import get_ffmpeg_path
+    assert get_ffmpeg_path() in cmd
     assert "-i" in cmd
     idx = cmd.index("-i")
     assert cmd[idx + 1] == "/path/to/input.mp4"
@@ -107,7 +108,8 @@ def test_build_encode_cmd():
         encoder_profile="libx265",
         quality=60
     )
-    assert "ffmpeg" in cmd
+    from upscaler.tools import get_ffmpeg_path
+    assert get_ffmpeg_path() in cmd
     assert "-framerate" in cmd
     assert "24/1" in cmd
     assert "-vf" in cmd
@@ -132,8 +134,9 @@ def test_build_encode_cmd_vaapi():
 
 def test_build_concat_cmd():
     cmd = build_concat_cmd("/work/concat_list.txt", "/work/video_only.mp4")
+    from upscaler.tools import get_ffmpeg_path
     assert cmd == [
-        "ffmpeg", "-y",
+        get_ffmpeg_path(), "-y",
         "-f", "concat",
         "-safe", "0",
         "-i", "/work/concat_list.txt",
@@ -157,7 +160,8 @@ def test_build_remux_cmd():
         streams=streams
     )
     
-    assert "ffmpeg" in cmd
+    from upscaler.tools import get_ffmpeg_path
+    assert get_ffmpeg_path() in cmd
     # Maps video only from input 0
     assert "-map" in cmd
     assert "0:v:0" in cmd

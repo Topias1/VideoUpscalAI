@@ -2,6 +2,7 @@ import os
 from typing import Any, Dict, List, Optional, Tuple
 
 from .encoders import get_encoder_args
+from .tools import get_ffmpeg_path
 
 def build_split_cmd(
     input_path: str,
@@ -13,7 +14,7 @@ def build_split_cmd(
     out_pattern = os.path.join(seg_in_dir, "seg_%04d.mkv")
     
     return [
-        "ffmpeg",
+        get_ffmpeg_path(),
         "-y",
         "-i", input_path,
         "-an", "-sn", "-dn",
@@ -46,7 +47,7 @@ def build_extract_cmd(
     if is_hdr and hdr_mode == "tonemap":
         filters.append("zscale=t=linear:npl=100,tonemap=tonemap=hable,zscale=p=bt709:t=bt709:m=bt709:r=tv,format=rgb24")
 
-    cmd = ["ffmpeg", "-y", "-i", segment_path]
+    cmd = [get_ffmpeg_path(), "-y", "-i", segment_path]
     if filters:
         cmd.extend(["-vf", ",".join(filters)])
         
@@ -121,7 +122,7 @@ def build_encode_cmd(
     vf_str = ",".join(filters)
 
     cmd = [
-        "ffmpeg",
+        get_ffmpeg_path(),
         "-y",
         "-framerate", fps,
         "-i", input_pattern,
@@ -141,7 +142,7 @@ def build_concat_cmd(
 ) -> List[str]:
     """Builds the ffmpeg command to concatenate segment MP4s."""
     return [
-        "ffmpeg",
+        get_ffmpeg_path(),
         "-y",
         "-f", "concat",
         "-safe", "0",
@@ -162,7 +163,7 @@ def build_remux_cmd(
     """
     # Base command maps input 0 (video_only) video track, and maps input 1 (original)
     cmd = [
-        "ffmpeg",
+        get_ffmpeg_path(),
         "-y",
         "-i", video_only_path,
         "-i", original_input_path,

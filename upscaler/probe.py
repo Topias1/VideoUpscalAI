@@ -174,13 +174,14 @@ def detect_video_type(video_path: str) -> str:
     import tempfile
     import os
     import uuid
+    from .tools import get_ffmpeg_path
     
     # Extract 1 frame from the video
     temp_dir = tempfile.gettempdir()
     temp_png = os.path.join(temp_dir, f"probe_{uuid.uuid4().hex}.png")
     
     cmd = [
-        "ffmpeg", "-y",
+        get_ffmpeg_path(), "-y",
         "-ss", "00:00:01",  # Seek to 1s to avoid black intro frames
         "-i", video_path,
         "-vframes", "1",
@@ -194,7 +195,7 @@ def detect_video_type(video_path: str) -> str:
         subprocess.run(cmd, capture_output=True, check=True)
     except subprocess.CalledProcessError:
         cmd_noseek = [
-            "ffmpeg", "-y",
+            get_ffmpeg_path(), "-y",
             "-i", video_path,
             "-vframes", "1",
             "-f", "image2",

@@ -1,5 +1,10 @@
 import os
 import sys
+try:
+    sys.stdout.reconfigure(write_through=True, line_buffering=True)
+    sys.stderr.reconfigure(write_through=True, line_buffering=True)
+except Exception:
+    pass
 import threading
 import time
 import webview

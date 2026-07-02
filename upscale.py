@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 import argparse
 import sys
+try:
+    sys.stdout.reconfigure(write_through=True, line_buffering=True)
+    sys.stderr.reconfigure(write_through=True, line_buffering=True)
+except Exception:
+    pass
 from typing import List
 
 from upscaler import UpscalerError, ToolError
