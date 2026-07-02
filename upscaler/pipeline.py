@@ -223,8 +223,14 @@ def run_single_file(
         work_dir = os.path.abspath(opts["work_dir"])
     else:
         # Default work dir: .work_<stem>_<preset> inside current working directory
+        # If running from a double-clicked macOS bundle, CWD is / (read-only), so we fallback to user home directory.
         in_path = Path(input_abs)
-        work_dir = os.path.abspath(f".work_{in_path.stem}_{preset}")
+        cwd = os.getcwd()
+        if cwd == "/" or not os.access(cwd, os.W_OK):
+            work_dir_parent = os.path.expanduser("~")
+        else:
+            work_dir_parent = cwd
+        work_dir = os.path.abspath(os.path.join(work_dir_parent, f".work_{in_path.stem}_{preset}"))
         
     os.makedirs(work_dir, exist_ok=True)
     manifest_path = os.path.join(work_dir, "manifest.json")
