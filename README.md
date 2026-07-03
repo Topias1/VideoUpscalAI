@@ -1,13 +1,17 @@
 # Ravive
 
+**AI-powered video & image upscaler.**
+
+[![Latest Release](https://img.shields.io/github/v/release/Topias1/Ravive?label=release)](https://github.com/Topias1/Ravive/releases/latest)
+[![License: GPL v3](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey)](#installation--standalone-app)
+
 > [!IMPORTANT]
 > 🚀 **[Download Ravive v1.0 for macOS (DMG)](https://github.com/Topias1/Ravive/releases/download/v1.0/Ravive.dmg)**
 
 ![Ravive Interface](screenshot.png)
 
-A robust, resumable command-line pipeline that upscales videos using **Real-ESRGAN-ncnn-vulkan** (GPU-accelerated inference) for frame upscaling and **ffmpeg** for demuxing, downscaling, and hardware-accelerated re-encoding.
-
-Developed and optimized for **Apple Silicon macOS**, but architected from the ground up to support **Linux** (NVIDIA NVENC, Intel/AMD VAAPI, and CPU libx265).
+Ravive is a robust, resumable **AI video upscaler** that upscales footage to 4K using **Real-ESRGAN** (GPU-accelerated inference) for frame upscaling and **ffmpeg** for demuxing, downscaling, and hardware-accelerated re-encoding. Built for **macOS (Apple Silicon)** with full **Linux** support (NVIDIA NVENC, Intel/AMD VAAPI, CPU libx265), Ravive is aimed at anyone restoring old footage, upscaling anime, or preparing video for 4K displays without cloud uploads or per-minute pricing.
 
 ## Key Features
 
@@ -139,6 +143,27 @@ A beautiful, light-weight local Web GUI server is included (`gui.py`) which runs
    ```
 2. Open your web browser at: **`http://127.0.0.1:8080`**
 3. Select your video, configure resolution, pick model auto-detection, set parallel workers, toggle filters, and follow real-time progress bars and console logs directly on the web page.
+
+---
+
+## Roadmap
+
+- [x] Resumable GPU-accelerated video upscaling (Real-ESRGAN + ffmpeg)
+- [x] Local web GUI
+- [x] Linux support (NVENC / VAAPI / libx265)
+- [ ] **AI image upscaling** — same Real-ESRGAN pipeline extended to single images
+- [ ] Batch presets and queueing improvements
+
+## How Ravive Compares
+
+| | Ravive | video2x | QualityScaler |
+|---|---|---|---|
+| Engine | Real-ESRGAN-ncnn-vulkan | Real-ESRGAN / Anime4K / Real-CUGAN | Real-ESRGAN / BSRGAN / IRCNN |
+| Resumable pipeline | ✅ per-chunk resume | — undocumented | ✅ stop & resume |
+| macOS (Apple Silicon native) | ✅ VideoToolbox | ❌ Docker only | ❌ Windows-only |
+| Linux hardware encoders | ✅ NVENC / VAAPI | — undocumented | ❌ |
+| Standalone app | ✅ notarized `.app`/DMG | ❌ CLI / Docker / Windows GUI | ✅ standalone `.exe` (Windows) |
+| HDR tonemap + VFR conform | ✅ | — undocumented | — undocumented |
 
 ---
 
