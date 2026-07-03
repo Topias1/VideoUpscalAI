@@ -1,9 +1,9 @@
-# VideoUpscalAI
+# Ravive
 
 > [!IMPORTANT]
-> 🚀 **[Download VideoUpscalAI v1.0 for macOS (DMG)](https://github.com/Topias1/VideoUpscalAI/releases/download/v1.0/VideoUpscalAI.dmg)**
+> 🚀 **[Download Ravive v1.0 for macOS (DMG)](https://github.com/Topias1/Ravive/releases/download/v1.0/Ravive.dmg)**
 
-![VideoUpscalAI Interface](screenshot.png)
+![Ravive Interface](screenshot.png)
 
 A robust, resumable command-line pipeline that upscales videos using **Real-ESRGAN-ncnn-vulkan** (GPU-accelerated inference) for frame upscaling and **ffmpeg** for demuxing, downscaling, and hardware-accelerated re-encoding.
 
@@ -24,9 +24,9 @@ Developed and optimized for **Apple Silicon macOS**, but architected from the gr
 
 ### Standalone macOS Application
 For macOS users, a pre-compiled, **100% self-contained** standalone bundle is available:
-* **To run**: Simply double-click `dist/VideoUpscalAI.app` in Finder, or run:
+* **To run**: Simply double-click `dist/Ravive.app` in Finder, or run:
   ```bash
-  open dist/VideoUpscalAI.app
+  open dist/Ravive.app
   ```
 
 ### Developer Setup (Source Code Run)

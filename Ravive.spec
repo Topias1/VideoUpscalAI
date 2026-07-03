@@ -21,7 +21,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='VideoUpscalAI',
+    name='Ravive',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -41,12 +41,12 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='VideoUpscalAI',
+    name='Ravive',
 )
 app = BUNDLE(
     coll,
-    name='VideoUpscalAI.app',
+    name='Ravive.app',
     icon='logo.icns',
-    bundle_identifier='com.electrateam.VideoUpscalAI',
+    bundle_identifier='com.electrateam.ravive',
     codesign_identity='Developer ID Application: Antoine Weytens (K9KAJBBY5C)',
 )

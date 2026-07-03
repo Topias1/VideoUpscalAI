@@ -292,7 +292,7 @@ HTML_CONTENT = """<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VideoUpscalAI</title>
+    <title>Ravive</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -675,7 +675,7 @@ HTML_CONTENT = """<!DOCTYPE html>
     <div class="container">
         <div style="text-align: center; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 16px;">
             <img src="/logo.jpg" alt="Logo" style="width: 50px; height: 50px; border-radius: 12px; box-shadow: 0 5px 15px rgba(99, 102, 241, 0.4); border: 2px solid rgba(255, 255, 255, 0.1); display: inline-block;">
-            <h1>VideoUpscalAI</h1>
+            <h1>Ravive</h1>
         </div>
         <div class="subtitle" style="margin-bottom: 20px;">Local GUI for AI Processing</div>
 
@@ -980,7 +980,7 @@ HTML_CONTENT = """<!DOCTYPE html>
 def main():
     server = HTTPServer(("127.0.0.1", 8080), GUIHandler)
     print("================================================================================")
-    print("   VideoUpscalAI GUI Server Started Successfully")
+    print("   Ravive GUI Server Started Successfully")
     print("   Open your browser and navigate to: http://127.0.0.1:8080")
     print("================================================================================")
     try:
