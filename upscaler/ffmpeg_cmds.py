@@ -119,10 +119,19 @@ def build_encode_cmd(
     from .plan import get_target_height
     target_h = get_target_height(preset)
     
+    # Derive the width from the *display* aspect ratio, not from the stored
+    # pixel dimensions. An anamorphic source (e.g. 720x480 with SAR 32:27)
+    # would otherwise be encoded at 3240x2160 and left to the player to
+    # stretch — spending the full upscaling cost, then throwing away 16% of
+    # the horizontal resolution at the last step. setsar=1 makes the result
+    # square-pixel. Square-pixel sources have dar == iw/ih, so they are
+    # unaffected.
+    scale_expr = f"scale=w=trunc(oh*dar/2)*2:h={target_h}:flags=lanczos,setsar=1"
+
     if encoder_profile == "vaapi":
-        filters.append(f"scale=-2:{target_h}:flags=lanczos,format=nv12,hwupload")
+        filters.append(f"{scale_expr},format=nv12,hwupload")
     else:
-        filters.append(f"scale=-2:{target_h}:flags=lanczos")
+        filters.append(scale_expr)
         
     vf_str = ",".join(filters)
 

@@ -114,7 +114,9 @@ def test_build_encode_cmd():
     assert "24/1" in cmd
     assert "-vf" in cmd
     idx = cmd.index("-vf")
-    assert cmd[idx + 1] == "scale=-2:1080:flags=lanczos"
+    # Width comes from the display aspect ratio so anamorphic sources reach
+    # their true resolution; setsar=1 keeps the output square-pixel.
+    assert cmd[idx + 1] == "scale=w=trunc(oh*dar/2)*2:h=1080:flags=lanczos,setsar=1"
     assert "libx265" in cmd
     assert "/work/seg_out/seg_0000.mp4" in cmd
 
@@ -129,7 +131,9 @@ def test_build_encode_cmd_vaapi():
     )
     idx = cmd.index("-vf")
     # should contain format=nv12,hwupload
-    assert cmd[idx + 1] == "scale=-2:1080:flags=lanczos,format=nv12,hwupload"
+    assert cmd[idx + 1] == (
+        "scale=w=trunc(oh*dar/2)*2:h=1080:flags=lanczos,setsar=1,format=nv12,hwupload"
+    )
     assert "-vaapi_device" in cmd
 
 def test_build_concat_cmd():

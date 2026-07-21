@@ -86,6 +86,17 @@ def detect_platform() -> str:
         return "other"
 
 def find_realesrgan(custom_path: Optional[str] = None) -> str:
+    # An explicit --realesrgan-bin wins over the bundled binary. Ignoring it
+    # silently made tests believe they were driving a stub while they were in
+    # fact running the real model on the GPU.
+    if custom_path:
+        expanded = os.path.abspath(os.path.expanduser(custom_path))
+        if not os.path.isfile(expanded):
+            raise ToolError(f"realesrgan binary not found at {expanded}.")
+        if not os.access(expanded, os.X_OK):
+            raise ToolError(f"realesrgan binary at {expanded} is not executable.")
+        return expanded
+
     # Check local project directory or PyInstaller bundle directory (frozen)
     if getattr(sys, "frozen", False):
         base_dir = sys._MEIPASS
