@@ -28,6 +28,22 @@ def parse_rational(r_str: str) -> Optional[Fraction]:
     except (ValueError, ZeroDivisionError):
         return None
 
+def parse_ffprobe_scalar_int(stdout: str) -> Optional[int]:
+    """Parse a single integer from ffprobe's `-of csv=p=0` output.
+
+    ffprobe 8.x appends a trailing field separator ("59,\\n"), so a plain
+    int() on the stripped output raises. Take the first non-empty field.
+    """
+    for field in stdout.strip().split(","):
+        field = field.strip()
+        if not field:
+            continue
+        try:
+            return int(field)
+        except ValueError:
+            return None
+    return None
+
 def probe_video(video_path: str) -> VideoInfo:
     ffprobe_path = get_ffprobe_path()
     cmd = [
@@ -130,9 +146,9 @@ def probe_video(video_path: str) -> VideoInfo:
                 video_path
             ]
             count_res = subprocess.run(count_cmd, capture_output=True, text=True, check=True)
-            val = count_res.stdout.strip()
-            if val:
-                frame_count = int(val)
+            val = parse_ffprobe_scalar_int(count_res.stdout)
+            if val is not None:
+                frame_count = val
         except Exception:
             pass
 

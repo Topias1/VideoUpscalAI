@@ -15,7 +15,8 @@ from . import (
     SubprocessError,
     UpscalerError
 )
-from .probe import probe_video
+from .probe import parse_ffprobe_scalar_int, probe_video
+from . import progress as progress_events
 from .plan import check_preset_guard, check_vfr_mode, check_hdr_mode, estimate_disk_usage, verify_disk_space
 from .ffmpeg_cmds import (
     build_split_cmd,
@@ -41,9 +42,9 @@ def get_exact_frame_count(video_path: str) -> int:
             video_path
         ]
         res = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        val = res.stdout.strip()
-        if val:
-            return int(val)
+        val = parse_ffprobe_scalar_int(res.stdout)
+        if val is not None and val > 0:
+            return val
     except Exception:
         pass
         
@@ -121,18 +122,29 @@ def run_realesrgan_stream(
                             
                         if pct - last_pct >= 0.5 or pct == 100.0 or last_pct < 0:
                             last_pct = pct
-                            bar_len = 25
-                            filled_len = int(round(bar_len * pct / 100))
-                            bar = "█" * filled_len + "░" * (bar_len - filled_len)
-                            print(f"\r  [realesrgan] {chunk}: [{bar}] {pct:.2f}%", end="", flush=True)
+                            progress_events.emit(
+                                t="seg",
+                                seg=chunk,
+                                stage="upscale",
+                                pct=progress_events.segment_pct("upscale", pct),
+                            )
+                            # The \r-redrawn bar would be interleaved into the
+                            # event stream (and is redundant once a GUI renders
+                            # its own per-chunk bars), so emit one or the other.
+                            if not progress_events.events_enabled():
+                                bar_len = 25
+                                filled_len = int(round(bar_len * pct / 100))
+                                bar = "█" * filled_len + "░" * (bar_len - filled_len)
+                                print(f"\r  [realesrgan] {chunk}: [{bar}] {pct:.2f}%", end="", flush=True)
                     except Exception:
-                        print(f"\r  [realesrgan] {chunk} progress: {line}", end="", flush=True)
+                        if not progress_events.events_enabled():
+                            print(f"\r  [realesrgan] {chunk} progress: {line}", end="", flush=True)
             else:
                 buffer.append(char)
                 
         proc.wait()
         # Print a final newline to clear the progress line
-        if show_progress:
+        if show_progress and not progress_events.events_enabled():
             print()
         
         if proc.returncode != 0:
@@ -261,10 +273,19 @@ def run_single_file(
     # If HDR, verify ffmpeg supports zscale and tonemap
     if info.is_hdr and opts["hdr_mode"] == "tonemap":
         if not tools_info["has_zscale"] or not tools_info["has_tonemap"]:
+            # The bundled ffmpeg is the only one ever used (see tools.py), so
+            # telling the user to install another build was a dead end.
             raise ProbeError(
-                f"Source is HDR and --hdr-mode tonemap is selected, but your ffmpeg "
-                f"is missing the required 'zscale' (libzimg) or 'tonemap' filter. "
-                f"Please install a build of ffmpeg that includes libzimg (e.g. via Homebrew on macOS)."
+                "This video is HDR (HLG/PQ, as recorded by recent iPhones) and "
+                "the bundled ffmpeg lacks the 'zscale' filter needed to convert "
+                "it to SDR correctly.\n"
+                "Workarounds, in order of quality:\n"
+                "  1. Convert the source to SDR first, with an app that supports "
+                "HDR (e.g. export from Photos or Final Cut as Rec.709).\n"
+                "  2. Re-run with --hdr-mode passthrough to upscale without "
+                "converting: colours will look washed out on an SDR screen.\n"
+                "Note: installing ffmpeg separately does not help — this app "
+                "always uses its own bundled copy."
             )
 
     # 3. Setup work directory
@@ -285,10 +306,14 @@ def run_single_file(
     os.makedirs(work_dir, exist_ok=True)
     manifest_path = os.path.join(work_dir, "manifest.json")
     
-    # Verify disk space
+    # Verify disk space. The estimate covers one segment, but every worker
+    # holds its own frame set (raw + upscaled PNGs) at the same time, so the
+    # real peak scales with the worker count.
     disk_est = estimate_disk_usage(info, preset, opts["chunk_seconds"])
+    concurrent_segments = max(1, int(opts.get("workers", 1)))
+    peak_transient = disk_est["peak_transient_bytes"] * concurrent_segments
     file_size = os.path.getsize(input_abs)
-    verify_disk_space(work_dir, disk_est["peak_transient_bytes"], file_size)
+    verify_disk_space(work_dir, peak_transient, file_size)
 
     # Load/Create manifest
     resolved_params = {
@@ -351,6 +376,8 @@ def run_single_file(
     print_lock = threading.Lock()
     gpu_lock = threading.Lock()
     workers = opts.get("workers", 1)
+
+    progress_events.emit(t="segs", total=total_segments, workers=min(workers, total_segments))
     
     def process_segment(i: int) -> None:
         seg_path = segments[i]
@@ -372,12 +399,14 @@ def run_single_file(
                 out_count = get_exact_frame_count(out_seg_path)
                 if in_count == out_count and out_count > 0:
                     skip_chunk = True
+                    progress_events.emit(t="seg_done", seg=seg_name, idx=i + 1)
                     if workers == 1:
                         print(f"Segment {i+1}/{total_segments}: {seg_name} (Skipped - already completed)")
             except Exception:
                 pass
 
         if not skip_chunk:
+            progress_events.emit(t="seg", seg=seg_name, idx=i + 1, stage="extract", pct=0.0)
             if workers > 1:
                 with print_lock:
                     print(f"Segment {i+1}/{total_segments}: {seg_name} starting...")
@@ -429,6 +458,14 @@ def run_single_file(
                     f"This typically indicates frame drops due to open-GOP seeking."
                 )
 
+            progress_events.emit(
+                t="seg",
+                seg=seg_name,
+                idx=i + 1,
+                stage="upscale",
+                pct=progress_events.segment_pct("upscale", 0.0),
+            )
+
             # Stage 2: Upscale 4x
             with gpu_lock:
                 real_cmd = build_realesrgan_cmd(
@@ -457,6 +494,14 @@ def run_single_file(
                     f"Expected upscaled PNG count: {png_count}\n"
                     f"Actual upscaled PNG count: {up_png_count}"
                 )
+
+            progress_events.emit(
+                t="seg",
+                seg=seg_name,
+                idx=i + 1,
+                stage="encode",
+                pct=progress_events.segment_pct("encode", 0.0),
+            )
 
             # Stage 3: Scale down to preset and encode
             input_pattern = os.path.join(up_dir, "f_%08d.png")
@@ -495,6 +540,8 @@ def run_single_file(
             with manifest_lock:
                 manifest["chunks"][seg_name] = "completed"
                 save_manifest(manifest_path, manifest)
+
+            progress_events.emit(t="seg_done", seg=seg_name, idx=i + 1)
 
             # Stage 4: Clean up frames & up dirs
             if os.path.exists(frames_dir):

@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 from . import UpscalerError
+from . import progress as progress_events
 from .plan import resolve_output_paths
 from .probe import probe_video
 from .pipeline import run_single_file
@@ -100,6 +101,8 @@ def run_batch(
             print(f"{progress_prefix} (Skipped - output already exists and is valid)")
             skipped.append(infile)
             continue
+
+        progress_events.emit(t="file", idx=idx, total=total_files, name=filename)
 
         print(f"\n{'='*80}")
         print(f"{progress_prefix}")
