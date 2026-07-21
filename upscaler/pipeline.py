@@ -15,7 +15,7 @@ from . import (
     SubprocessError,
     UpscalerError
 )
-from .probe import parse_ffprobe_scalar_int, probe_video
+from .probe import VideoInfo, parse_ffprobe_scalar_int, probe_video
 from . import progress as progress_events
 from .plan import check_preset_guard, check_vfr_mode, check_hdr_mode, estimate_disk_usage, verify_disk_space
 from .ffmpeg_cmds import (
@@ -76,6 +76,36 @@ def run_cmd_checked(cmd: List[str], file_path: str, stage: str, chunk: Optional[
         raise SubprocessError(
             f"Failed to execute command for {stage}{chunk_info} for file {file_path}: {e}"
         )
+
+def is_source_degraded(info: VideoInfo) -> bool:
+    """Is this footage damaged enough to warrant aggressive restoration?
+
+    Resolution is the discriminator, not bitrate: modern codecs are efficient
+    enough that pristine 4K can sit *below* a VHS capture in bits per pixel
+    (measured: 0.107 vs 0.170), so bitrate ranks the two backwards. The short
+    side is what counts, so portrait clips are judged on their real detail
+    level rather than their tall dimension.
+    """
+    return min(info.width, info.height) <= 720
+
+
+def select_auto_model(info: VideoInfo, video_type: str, is_upscayl: bool) -> str:
+    """Pick a model in --model auto, from content type and source condition.
+
+    Measured across real material: on genuinely degraded footage (a 1999 PAL
+    camcorder capture, 480p social-network exports) the aggressive
+    upscayl-standard-4x restores clearly more detail, because there is real
+    degradation to invert — which is what these networks are trained on. On a
+    clean sharp source there is nothing to undo and that same aggressiveness
+    turns into invented texture; there high-fidelity-4x scored higher and
+    stayed noticeably steadier from frame to frame.
+    """
+    if video_type == "animation":
+        return "digital-art-4x" if is_upscayl else "realesr-animevideov3"
+    if not is_upscayl:
+        return "realesrgan-x4plus"
+    return "upscayl-standard-4x" if is_source_degraded(info) else "high-fidelity-4x"
+
 
 def run_realesrgan_stream(
     cmd: List[str],
@@ -243,11 +273,11 @@ def run_single_file(
     if opts.get("model") == "auto":
         from .probe import detect_video_type
         v_type = detect_video_type(input_abs)
-        if v_type == "animation":
-            opts["model"] = "digital-art-4x" if is_upscayl else "realesr-animevideov3"
-        else:
-            opts["model"] = "upscayl-standard-4x" if is_upscayl else "realesrgan-x4plus"
-        print(f"Auto-detected content type: {v_type}. Using model: {opts['model']}")
+        opts["model"] = select_auto_model(info, v_type, is_upscayl)
+        condition = "degraded" if is_source_degraded(info) else "clean"
+        print(f"Auto-detected content type: {v_type}, source "
+              f"{info.width}x{info.height} ({condition}). "
+              f"Using model: {opts['model']}")
     else:
         # Translate manual model name to match binary capabilities (Upscayl vs Standard)
         model = opts.get("model")

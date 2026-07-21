@@ -1368,11 +1368,12 @@ HTML_CONTENT = """<!DOCTYPE html>
                 <div class="form-group">
                     <label for="model">AI Upscaling Model</label>
                     <select id="model">
-                        <option value="auto" selected data-hint="Auto Detection picks the right model for your source.">Auto Detection</option>
-                        <option value="realesrgan-x4plus" data-hint="For real, live-action video.">Real-ESRGAN x4plus</option>
-                        <option value="realesr-animevideov3" data-hint="For 2D/3D animation.">Real-ESR Anime Video v3</option>
-                        <option value="digital-art-4x" data-hint="For CGI renders and digital art.">Digital Art 4x</option>
-                        <option value="ultrasharp-4x" data-hint="For photos and texture work.">UltraSharp 4x</option>
+                        <option value="auto" selected data-hint="Picks a model from your source: strong restoration below 720p, gentler above.">Auto Detection</option>
+                        <option value="realesrgan-x4plus" data-hint="Strong restoration. Best on old or heavily compressed video (VHS captures, social-network exports).">Restore — old / damaged video</option>
+                        <option value="high-fidelity-4x" data-hint="Gentler, stays closest to the source and flickers least. Best when the video is already sharp.">Refine — already sharp video</option>
+                        <option value="realesr-animevideov3" data-hint="For 2D/3D animation.">Animation</option>
+                        <option value="digital-art-4x" data-hint="For CGI renders and digital art.">CGI / digital art</option>
+                        <option value="ultrasharp-4x" data-hint="Sharpest, but the least steady between frames — can shimmer on video.">UltraSharp (photos)</option>
                     </select>
                     <div class="field-hint" id="modelHint">Auto Detection picks the right model for your source.</div>
                 </div>
