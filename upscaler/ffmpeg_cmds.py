@@ -102,9 +102,14 @@ def build_encode_cmd(
     quality: int,
     bitrate: Optional[str] = None,
     interpolate_fps: Optional[int] = None,
-    temporal_denoise: bool = False
+    temporal_denoise: bool = False,
+    target_w: Optional[int] = None
 ) -> List[str]:
-    """Builds the ffmpeg command to encode upscaled PNGs into a segment MP4."""
+    """Builds the ffmpeg command to encode upscaled PNGs into a segment MP4.
+
+    target_w is the displayed width the source should end up at. Pass it for
+    anamorphic sources; omitting it keeps the width proportional to the frames.
+    """
     filters = []
     
     # 1. Temporal Denoising
@@ -119,14 +124,15 @@ def build_encode_cmd(
     from .plan import get_target_height
     target_h = get_target_height(preset)
     
-    # Derive the width from the *display* aspect ratio, not from the stored
-    # pixel dimensions. An anamorphic source (e.g. 720x480 with SAR 32:27)
-    # would otherwise be encoded at 3240x2160 and left to the player to
-    # stretch — spending the full upscaling cost, then throwing away 16% of
-    # the horizontal resolution at the last step. setsar=1 makes the result
-    # square-pixel. Square-pixel sources have dar == iw/ih, so they are
-    # unaffected.
-    scale_expr = f"scale=w=trunc(oh*dar/2)*2:h={target_h}:flags=lanczos,setsar=1"
+    # Anamorphic sources (PAL DV: 720x576 stored, 4:3 displayed) must be
+    # encoded at their true displayed width. The frames cannot be asked: the
+    # upscaler strips the sample aspect ratio from the PNGs it writes, so by
+    # this point the pixels claim to be square whatever the source was. The
+    # caller therefore passes the width computed from the probed source.
+    if target_w:
+        scale_expr = f"scale={target_w}:{target_h}:flags=lanczos,setsar=1"
+    else:
+        scale_expr = f"scale=-2:{target_h}:flags=lanczos,setsar=1"
 
     if encoder_profile == "vaapi":
         filters.append(f"{scale_expr},format=nv12,hwupload")

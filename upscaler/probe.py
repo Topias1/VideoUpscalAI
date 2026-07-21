@@ -19,12 +19,19 @@ class VideoInfo(NamedTuple):
     is_vfr: bool
     color_transfer: Optional[str]
     color_primaries: Optional[str]
+    # Displayed width / height. Differs from width/height on anamorphic
+    # sources (PAL DV is 720x576 stored, 4:3 displayed). It has to travel with
+    # the probe because upscayl-bin strips the sample aspect ratio from the
+    # frames it writes, so by encode time the pixels no longer say it.
+    display_aspect: float = 0.0
 
 def parse_rational(r_str: str) -> Optional[Fraction]:
     try:
-        if not r_str or r_str == "0/0":
+        if not r_str or r_str in ("0/0", "0:1", "N/A"):
             return None
-        return Fraction(r_str)
+        # ffprobe writes frame rates as "30/1" but aspect ratios as "4:3";
+        # Fraction only understands the former.
+        return Fraction(r_str.replace(":", "/"))
     except (ValueError, ZeroDivisionError):
         return None
 
@@ -170,6 +177,32 @@ def probe_video(video_path: str) -> VideoInfo:
 
     has_chapters = len(chapters) > 0
 
+    # Displayed geometry: storage dimensions corrected by the pixel aspect,
+    # then by rotation. ffprobe's display_aspect_ratio is preferred when
+    # present, the sample aspect ratio is the fallback, square pixels the
+    # default.
+    display_aspect = width / height if height else 0.0
+    dar = parse_rational(video_stream.get("display_aspect_ratio"))
+    if dar:
+        display_aspect = float(dar)
+    else:
+        sar = parse_rational(video_stream.get("sample_aspect_ratio"))
+        if sar and height:
+            display_aspect = width * float(sar) / height
+
+    # A quarter-turn swaps the displayed axes. Frame extraction applies the
+    # rotation, so downstream stages see the turned geometry and the aspect
+    # has to follow, or portrait phone clips come out stretched.
+    rotation = 0
+    for side_data in video_stream.get("side_data_list", []) or []:
+        if "rotation" in side_data:
+            try:
+                rotation = int(side_data["rotation"])
+            except (TypeError, ValueError):
+                rotation = 0
+    if rotation % 180 != 0 and display_aspect:
+        display_aspect = 1.0 / display_aspect
+
     return VideoInfo(
         width=width,
         height=height,
@@ -183,6 +216,7 @@ def probe_video(video_path: str) -> VideoInfo:
         is_vfr=is_vfr,
         color_transfer=color_transfer,
         color_primaries=color_primaries,
+        display_aspect=display_aspect,
     )
 
 def detect_video_type(video_path: str) -> str:

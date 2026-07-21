@@ -383,6 +383,15 @@ def run_single_file(
             raise ProbeError("Pre-splitting completed but no segments were created.")
 
     # Create seg_out directory
+    # Displayed width the output must reach. Computed here, from the probed
+    # source, because the upscaled frames have lost the pixel aspect ratio by
+    # the time they reach the encoder.
+    from .plan import get_target_height
+    _target_h = get_target_height(preset)
+    target_width = None
+    if info.display_aspect:
+        target_width = int(round(_target_h * info.display_aspect / 2)) * 2
+
     seg_out_dir = os.path.join(work_dir, "seg_out")
     os.makedirs(seg_out_dir, exist_ok=True)
 
@@ -544,7 +553,8 @@ def run_single_file(
                 opts["quality"],
                 opts.get("bitrate"),
                 interpolate_fps=opts.get("interpolate_fps"),
-                temporal_denoise=opts.get("temporal_denoise", False)
+                temporal_denoise=opts.get("temporal_denoise", False),
+                target_w=target_width
             )
             run_cmd_checked(encode_cmd, input_abs, "re-encode", seg_name)
 
